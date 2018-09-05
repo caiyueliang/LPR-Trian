@@ -1,8 +1,10 @@
+# encoding:utf-8
 import os
 import argparse
 
 import cv2
 import numpy as np
+from keras.layers import *
 from keras import backend as K
 from keras.layers import Input, Activation, Conv2D, BatchNormalization, Lambda, MaxPooling2D, Dropout
 from keras.models import Model
@@ -25,6 +27,7 @@ CHARS_DICT = {char:i for i, char in enumerate(CHARS)}
 
 NUM_CHARS = len(CHARS)
 
+
 # The actual loss calc occurs here despite it not being
 # an internal Keras loss function
 def ctc_lambda_func(args):
@@ -32,39 +35,100 @@ def ctc_lambda_func(args):
     y_pred = y_pred[:, :, 0, :]
     return K.ctc_batch_cost(labels, y_pred, input_length, label_length)
 
+
+# ======================================================================================================================
 def build_model(width, num_channels):
     input_tensor = Input(name='the_input', shape=(width, 40, num_channels), dtype='float32')
     x = input_tensor
     base_conv = 32
+    print('input_tensor', x.shape)
 
     for i in range(3):
         x = Conv2D(base_conv * (2 ** (i)), (3, 3), padding="same")(x)
+        print('Conv2D', x.shape)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
         x = MaxPooling2D(pool_size=(2, 2))(x)
+        print('MaxPooling2D', x.shape)
+
     x = Conv2D(256, (5, 5))(x)
+    print('Conv2D', x.shape)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
     x = Conv2D(1024, (1, 1))(x)
+    print('Conv2D', x.shape)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
     x = Conv2D(NUM_CHARS+1, (1, 1))(x)
+    print('Conv2D', x.shape)
     x = Activation('softmax')(x)
 
     y_pred = x
     return input_tensor, y_pred
 
+
+# 基于GRU车牌识别模型
+def model_seq_rec():
+    width, height, n_len, n_class = 164, 48, 7, NUM_CHARS + 1
+    rnn_size = 256
+    input_tensor = Input((164, 48, 3))
+    x = input_tensor
+    base_conv = 32
+
+    for i in range(3):
+        x = Conv2D(base_conv * (2 ** i), (3, 3))(x)
+        print('Conv2D', x.shape)
+        x = BatchNormalization()(x)
+        x = Activation('relu')(x)
+        x = MaxPooling2D(pool_size=(2, 2))(x)
+        print('MaxPooling2D', x.shape)
+
+    conv_shape = x.get_shape()
+    x = Reshape(target_shape=(int(conv_shape[1]), int(conv_shape[2] * conv_shape[3])))(x)
+    print('Reshape', x.shape)                   # [None, 18, 512]
+    x = Dense(32)(x)
+    print('Dense', x.shape)                     # [None, 18, 32]
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+
+    gru_1 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru1')(x)
+    print('gru_1', gru_1.shape)                 # [None, None, 256]
+    gru_1b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru1_b')(x)
+    print('gru_1b', gru_1b.shape)               # [None, None, 256]
+    gru1_merged = add([gru_1, gru_1b])
+    print('gru1_merged', gru1_merged.shape)     # [None, None, 256]
+
+    gru_2 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru2')(gru1_merged)
+    print('gru_2', gru_2.shape)                 # [None, None, 256]
+    gru_2b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru2_b')(gru1_merged)
+    print('gru_2b', gru_2b.shape)               # [None, None, 256]
+    x = concatenate([gru_2, gru_2b])
+    print('concatenate', x.shape)               # [None, None, 512]
+    x = Dropout(0.25)(x)
+    x = Dense(n_class, kernel_initializer='he_normal', activation='softmax')(x)
+    print('Dense', x.shape)                     # [None, 18, 84]
+
+    # base_model = Model(inputs=input_tensor, outputs=x)
+    # base_model.load_weights(model_path)
+    # return base_model
+
+    y_pred = x
+    return input_tensor, y_pred
+
+# ======================================================================================================================
 def encode_label(s):
     label = np.zeros([len(s)])
     for i, c in enumerate(s):
         label[i] = CHARS_DICT[c]
     return label
 
+
 def parse_line(line):
     parts = line.split(':')
     filename = parts[0]
     label = encode_label(parts[1].strip().upper())
     return filename, label
+
 
 class TextImageGenerator:
     def __init__(self, img_dir, label_file, batch_size, img_size, input_length, num_channels=3, label_len=5):
@@ -136,6 +200,7 @@ class TextImageGenerator:
         while True:
             yield self.next_batch()
 
+
 def train(args):
     """Train the OCR model
     """
@@ -200,6 +265,7 @@ def train(args):
                         callbacks=cbs,
                         initial_epoch=args.start_epoch)
 
+
 def export(args):
     """Export the model to a hdf5 file
     """
@@ -207,6 +273,7 @@ def export(args):
     model = Model(inputs=input_tensor, outputs=y_pred)
     model.save(args.m)
     print('model saved to {}'.format(args.m))
+
 
 def main ():
     ps = argparse.ArgumentParser()
@@ -237,5 +304,33 @@ def main ():
     args = ps.parse_args()
     args.func(args)
 
+
+def test_model_layers():
+    input_tensor, y_pred = build_model(160, 3)
+    my_model = Model(inputs=input_tensor, outputs=y_pred)
+
+    x = np.zeros([1, 160, 40, 3])
+    print('x', x.shape)
+    y = my_model.predict(x)  # 预测
+    print('y', y.shape)
+
+
+def test_model_layers_1():
+    input_tensor, y_pred = model_seq_rec()
+    my_model = Model(inputs=input_tensor, outputs=y_pred)
+
+    x = np.zeros([1, 164, 48, 3])
+    print('x', x.shape)
+    y = my_model.predict(x)  # 预测
+    print('y', y.shape)
+
+
 if __name__ == '__main__':
-    main()
+    # main()
+
+    test_model_layers()
+    test_model_layers_1()
+    # model = CNN()
+    # data = Variable(torch.randn(1, 3, 178, 178))
+    # x = model(data)
+    # print('x', x.size())
