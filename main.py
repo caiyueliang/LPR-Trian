@@ -81,9 +81,10 @@ def model_seq_rec():
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
         x = MaxPooling2D(pool_size=(2, 2))(x)
-        print('MaxPooling2D', x.shape)
+        print('MaxPooling2D', x.shape)          # [None, 18, 4, 128]
 
     conv_shape = x.get_shape()
+    # print(conv_shape)
     x = Reshape(target_shape=(int(conv_shape[1]), int(conv_shape[2] * conv_shape[3])))(x)
     print('Reshape', x.shape)                   # [None, 18, 512]
     x = Dense(32)(x)
