@@ -43,7 +43,10 @@ NUM_CHARS = len(CHARS)
 # an internal Keras loss function
 def ctc_lambda_func(args):
     y_pred, labels, input_length, label_length = args
-    y_pred = y_pred[:, :, 0, :]
+    print('y_pred', y_pred.shape)
+    # y_pred = y_pred[:, :, 0, :]
+    print('y_pred', y_pred.shape)
+
     return K.ctc_batch_cost(labels, y_pred, input_length, label_length)
 
 
@@ -132,8 +135,6 @@ def model_seq_rec():
 def encode_label(s):
     s = s.decode("utf-8")
     print(s)
-    print('s', s)
-    print(len(s))
 
     label = np.zeros([len(s)])
     for i, c in enumerate(s):
@@ -233,6 +234,72 @@ def train(args):
         os.makedirs(args.log)
     label_len = args.label_len
 
+    # input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
+    input_tensor, y_pred = model_seq_rec()
+
+    labels = Input(name='the_labels', shape=[label_len], dtype='float32')
+    input_length = Input(name='input_length', shape=[1], dtype='int32')
+    label_length = Input(name='label_length', shape=[1], dtype='int32')
+
+    pred_length = int(y_pred.shape[1])
+    # Keras doesn't currently support loss funcs with extra parameters
+    # so CTC loss is implemented in a lambda layer
+    loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
+
+    # clipnorm seems to speeds up convergence
+    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
+
+    model = Model(inputs=[input_tensor, labels, input_length, label_length], outputs=loss_out)
+
+    # the loss calc occurs elsewhere, so use a dummy lambda func for the loss
+    model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=sgd)
+
+    if args.pre != '':
+        model.load_weights(args.pre)
+
+    train_gen = TextImageGenerator(img_dir=args.ti,
+                                 label_file=args.tl,
+                                 batch_size=args.b,
+                                 img_size=args.img_size,
+                                 input_length=pred_length,
+                                 num_channels=args.num_channels,
+                                 label_len=label_len)
+
+    val_gen = TextImageGenerator(img_dir=args.vi,
+                                 label_file=args.vl,
+                                 batch_size=args.b,
+                                 img_size=args.img_size,
+                                 input_length=pred_length,
+                                 num_channels=args.num_channels,
+                                 label_len=label_len)
+
+    checkpoints_cb = ModelCheckpoint(args.c, period=1)
+    cbs = [checkpoints_cb]
+
+    if args.log != '':
+        tfboard_cb = TensorBoard(log_dir=args.log, write_images=True)
+        cbs.append(tfboard_cb)
+
+    model.fit_generator(generator=train_gen.get_data(),
+                        steps_per_epoch=(train_gen._num_examples+train_gen._batch_size-1) // train_gen._batch_size,
+                        epochs=args.n,
+                        validation_data=val_gen.get_data(),
+                        validation_steps=(val_gen._num_examples+val_gen._batch_size-1) // val_gen._batch_size,
+                        callbacks=cbs,
+                        initial_epoch=args.start_epoch)
+
+
+def train_1(args):
+    """Train the OCR model
+    """
+    ckpt_dir = os.path.dirname(args.c)
+    if not os.path.isdir(ckpt_dir):
+        os.makedirs(ckpt_dir)
+
+    if args.log != '' and not os.path.isdir(args.log):
+        os.makedirs(args.log)
+    label_len = args.label_len
+
     input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
 
     labels = Input(name='the_labels', shape=[label_len], dtype='float32')
@@ -296,7 +363,7 @@ def export(args):
     print('model saved to {}'.format(args.m))
 
 
-def main ():
+def main():
     ps = argparse.ArgumentParser()
     ps.add_argument('-num_channels', type=int, help='number of channels of the image', default=3)
     subparsers = ps.add_subparsers()
@@ -316,6 +383,7 @@ def main ():
     parser_train.add_argument('-c', help='checkpoints format string', required=True)
     parser_train.add_argument('-log', help='tensorboard 日志目录, 默认为空', default='')
     parser_train.set_defaults(func=train)
+    # parser_train.set_defaults(func=train_1)
 
     # Argument parser of arguments to export the model
     parser_export = subparsers.add_parser('export', help='将模型导出为hdf5文件')
