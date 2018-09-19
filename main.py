@@ -44,7 +44,7 @@ NUM_CHARS = len(CHARS)
 def ctc_lambda_func(args):
     y_pred, labels, input_length, label_length = args
     print('y_pred', y_pred.shape)
-    # y_pred = y_pred[:, :, 0, :]
+    # y_pred = y_pred[:, :, 0, :]             # !!!!!!!!! 基于GRU要注释掉这一行
     print('y_pred', y_pred.shape)
 
     return K.ctc_batch_cost(labels, y_pred, input_length, label_length)
@@ -52,7 +52,7 @@ def ctc_lambda_func(args):
 
 # ======================================================================================================================
 def build_model(width, num_channels):
-    input_tensor = Input(name='the_input', shape=(width, 40, num_channels), dtype='float32')
+    input_tensor = Input(name='the_input', shape=(width, 48, num_channels), dtype='float32')
     x = input_tensor
     base_conv = 32
     print('input_tensor', x.shape)
@@ -91,37 +91,37 @@ def model_seq_rec():
 
     for i in range(3):
         x = Conv2D(base_conv * (2 ** i), (3, 3))(x)
-        print('Conv2D', x.shape)
+        # print('Conv2D', x.shape)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
         x = MaxPooling2D(pool_size=(2, 2))(x)
-        print('MaxPooling2D', x.shape)          # [None, 18, 4, 128]
+        # print('MaxPooling2D', x.shape)          # [None, 18, 4, 128]
 
     conv_shape = x.get_shape()
     # print(conv_shape)
     x = Reshape(target_shape=(int(conv_shape[1]), int(conv_shape[2] * conv_shape[3])))(x)
-    print('Reshape', x.shape)                   # [None, 18, 512]
+    # print('Reshape', x.shape)                   # [None, 18, 512]
     x = Dense(32)(x)
-    print('Dense', x.shape)                     # [None, 18, 32]
+    # print('Dense', x.shape)                     # [None, 18, 32]
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
 
     gru_1 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru1')(x)
-    print('gru_1', gru_1.shape)                 # [None, None, 256]
+    # print('gru_1', gru_1.shape)                 # [None, None, 256]
     gru_1b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru1_b')(x)
-    print('gru_1b', gru_1b.shape)               # [None, None, 256]
+    # print('gru_1b', gru_1b.shape)               # [None, None, 256]
     gru1_merged = add([gru_1, gru_1b])
-    print('gru1_merged', gru1_merged.shape)     # [None, None, 256]
+    # print('gru1_merged', gru1_merged.shape)     # [None, None, 256]
 
     gru_2 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru2')(gru1_merged)
-    print('gru_2', gru_2.shape)                 # [None, None, 256]
+    # print('gru_2', gru_2.shape)                 # [None, None, 256]
     gru_2b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru2_b')(gru1_merged)
-    print('gru_2b', gru_2b.shape)               # [None, None, 256]
+    # print('gru_2b', gru_2b.shape)               # [None, None, 256]
     x = concatenate([gru_2, gru_2b])
-    print('concatenate', x.shape)               # [None, None, 512]
+    # print('concatenate', x.shape)               # [None, None, 512]
     x = Dropout(0.25)(x)
     x = Dense(n_class, kernel_initializer='he_normal', activation='softmax')(x)
-    print('Dense', x.shape)                     # [None, 18, 84]
+    # print('Dense', x.shape)                     # [None, 18, 84]
 
     # base_model = Model(inputs=input_tensor, outputs=x)
     # base_model.load_weights(model_path)
@@ -134,11 +134,11 @@ def model_seq_rec():
 # ======================================================================================================================
 def encode_label(s):
     s = s.decode("utf-8")
-    print(s)
+    # print(s)
 
     label = np.zeros([len(s)])
     for i, c in enumerate(s):
-        print(c)
+        # print(c)
         label[i] = CHARS_DICT[c]
 
     print('label', label)
@@ -257,6 +257,13 @@ def train(args):
     if args.pre != '':
         model.load_weights(args.pre)
 
+    print("args.ti: %s" % args.ti)
+    print("args.tl: %s" % args.tl)
+    print("batch_size: %s" % args.b)
+    print("img_size: %s" % args.img_size)
+    print("input_length: %s" % pred_length)
+    print("num_channels: %s" % args.num_channels)
+    print("label_len: %s" % label_len)
     train_gen = TextImageGenerator(img_dir=args.ti,
                                  label_file=args.tl,
                                  batch_size=args.b,
@@ -265,6 +272,13 @@ def train(args):
                                  num_channels=args.num_channels,
                                  label_len=label_len)
 
+    print("args.vi: %s" % args.vi)
+    print("args.vl: %s" % args.vl)
+    print("batch_size: %s" % args.b)
+    print("img_size: %s" % args.img_size)
+    print("input_length: %s" % pred_length)
+    print("num_channels: %s" % args.num_channels)
+    print("label_len: %s" % label_len)
     val_gen = TextImageGenerator(img_dir=args.vi,
                                  label_file=args.vl,
                                  batch_size=args.b,
@@ -279,6 +293,12 @@ def train(args):
     if args.log != '':
         tfboard_cb = TensorBoard(log_dir=args.log, write_images=True)
         cbs.append(tfboard_cb)
+
+    print("train_gen.get_data: %s" % train_gen.get_data())
+    print("steps_per_epoch: %d" % ((train_gen._num_examples+train_gen._batch_size-1) // train_gen._batch_size))
+    print("val_gen.get_data: %s" % val_gen.get_data())
+    print("validation_steps: %d" % ((val_gen._num_examples+val_gen._batch_size-1) // val_gen._batch_size))
+    print("args.start_epoch: %d" % args.start_epoch)
 
     model.fit_generator(generator=train_gen.get_data(),
                         steps_per_epoch=(train_gen._num_examples+train_gen._batch_size-1) // train_gen._batch_size,
