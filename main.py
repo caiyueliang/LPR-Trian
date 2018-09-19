@@ -187,7 +187,7 @@ class TextImageGenerator:
                 self.filenames.append(filename)
                 self.labels.append(label)
                 self._num_examples += 1
-        print(self.labels)
+        # print(self.labels)
         self.labels = np.float32(self.labels)
 
     def next_batch(self):
@@ -304,7 +304,7 @@ def train(args):
                                  num_channels=args.num_channels,
                                  label_len=label_len)
 
-    checkpoints_cb = ModelCheckpoint(args.c, period=1)
+    checkpoints_cb = ModelCheckpoint(args.c, period=1, save_best_only=True)
     cbs = [checkpoints_cb]
 
     if args.log != '':
