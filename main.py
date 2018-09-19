@@ -43,19 +43,19 @@ NUM_CHARS = len(CHARS)
 # an internal Keras loss function
 def ctc_lambda_func(args):
     y_pred, labels, input_length, label_length = args
-    print('y_pred shape : %s' % y_pred.shape)
+    # print('y_pred shape : %s' % y_pred.shape)
 
     # y_pred = y_pred[:, :, 0, :]             # !!!!!!!!! 基于GRU要注释掉这一行
 
-    print('y_pred shape : %s' % y_pred.shape)
-    print('labels shape : %s' % labels.shape)
-    print('input_length shape : %s' % input_length.shape)
-    print('input_length : %s' % input_length)
-    print('label_length shape : %s' % label_length.shape)
-    print('label_length : %s' % label_length)
+    # print('y_pred shape : %s' % y_pred.shape)
+    # print('labels shape : %s' % labels.shape)
+    # print('input_length shape : %s' % input_length.shape)
+    # print('input_length : %s' % input_length)
+    # print('label_length shape : %s' % label_length.shape)
+    # print('label_length : %s' % label_length)
     loss = K.ctc_batch_cost(labels, y_pred, input_length, label_length)
-    print('loss shape : %s' % loss.shape)
-    print('loss : %s' % loss)
+    # print('loss shape : %s' % loss.shape)
+    # print('loss : %s' % loss)
     return loss
 
 
@@ -243,25 +243,19 @@ def train(args):
     if args.log != '' and not os.path.isdir(args.log):
         os.makedirs(args.log)
     label_len = args.label_len
-    # print("label_len : %d" % label_len)
 
     # input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
     input_tensor, y_pred = model_seq_rec()
-    # print("input_tensor shape: %s" % input_tensor.shape)
-    # print("y_pred shape: %s" % y_pred.shape)
 
     labels = Input(name='the_labels', shape=[label_len], dtype='float32')
     input_length = Input(name='input_length', shape=[1], dtype='int32')
     label_length = Input(name='label_length', shape=[1], dtype='int32')
 
     pred_length = int(y_pred.shape[1])
-    # print("pred_length : %d" % pred_length)
 
     # Keras doesn't currently support loss funcs with extra parameters
     # so CTC loss is implemented in a lambda layer
     loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
-    # print("loss_out : %s" % loss_out)
-    # print("loss_out shape: %s" % loss_out.shape)
 
     # clipnorm seems to speeds up convergence
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
@@ -276,6 +270,8 @@ def train(args):
 
     # print("args.ti: %s" % args.ti)
     # print("args.tl: %s" % args.tl)
+    # print("args.vi: %s" % args.vi)
+    # print("args.vl: %s" % args.vl)
     # print("batch_size: %s" % args.b)
     # print("img_size: %s" % args.img_size)
     # print("input_length: %s" % pred_length)
@@ -289,13 +285,6 @@ def train(args):
                                  num_channels=args.num_channels,
                                  label_len=label_len)
 
-    # print("args.vi: %s" % args.vi)
-    # print("args.vl: %s" % args.vl)
-    # print("batch_size: %s" % args.b)
-    # print("img_size: %s" % args.img_size)
-    # print("input_length: %s" % pred_length)
-    # print("num_channels: %s" % args.num_channels)
-    # print("label_len: %s" % label_len)
     val_gen = TextImageGenerator(img_dir=args.vi,
                                  label_file=args.vl,
                                  batch_size=args.b,
@@ -310,12 +299,6 @@ def train(args):
     if args.log != '':
         tfboard_cb = TensorBoard(log_dir=args.log, write_images=True)
         cbs.append(tfboard_cb)
-
-    print("train_gen.get_data: %s" % train_gen.get_data())
-    print("steps_per_epoch: %d" % ((train_gen._num_examples+train_gen._batch_size-1) // train_gen._batch_size))
-    print("val_gen.get_data: %s" % val_gen.get_data())
-    print("validation_steps: %d" % ((val_gen._num_examples+val_gen._batch_size-1) // val_gen._batch_size))
-    print("args.start_epoch: %d" % args.start_epoch)
 
     model.fit_generator(generator=train_gen.get_data(),
                         steps_per_epoch=(train_gen._num_examples+train_gen._batch_size-1) // train_gen._batch_size,
