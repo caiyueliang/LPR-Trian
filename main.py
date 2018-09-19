@@ -44,7 +44,9 @@ NUM_CHARS = len(CHARS)
 def ctc_lambda_func(args):
     y_pred, labels, input_length, label_length = args
     print('y_pred shape : %s' % y_pred.shape)
+
     # y_pred = y_pred[:, :, 0, :]             # !!!!!!!!! 基于GRU要注释掉这一行
+
     print('y_pred shape : %s' % y_pred.shape)
     print('labels shape : %s' % labels.shape)
     print('input_length shape : %s' % input_length.shape)
@@ -142,14 +144,13 @@ def model_seq_rec():
 # ======================================================================================================================
 def encode_label(s):
     s = s.decode("utf-8")
-    # print(s)
+    print(s)
 
     label = np.zeros([len(s)])
     for i, c in enumerate(s):
-        # print(c)
         label[i] = CHARS_DICT[c]
 
-    # print('label', label)
+    print('label', label)
     return label
 
 
@@ -186,6 +187,7 @@ class TextImageGenerator:
                 self.filenames.append(filename)
                 self.labels.append(label)
                 self._num_examples += 1
+        print(self.labels)
         self.labels = np.float32(self.labels)
 
     def next_batch(self):
@@ -272,13 +274,13 @@ def train(args):
     if args.pre != '':
         model.load_weights(args.pre)
 
-    print("args.ti: %s" % args.ti)
-    print("args.tl: %s" % args.tl)
-    print("batch_size: %s" % args.b)
-    print("img_size: %s" % args.img_size)
-    print("input_length: %s" % pred_length)
-    print("num_channels: %s" % args.num_channels)
-    print("label_len: %s" % label_len)
+    # print("args.ti: %s" % args.ti)
+    # print("args.tl: %s" % args.tl)
+    # print("batch_size: %s" % args.b)
+    # print("img_size: %s" % args.img_size)
+    # print("input_length: %s" % pred_length)
+    # print("num_channels: %s" % args.num_channels)
+    # print("label_len: %s" % label_len)
     train_gen = TextImageGenerator(img_dir=args.ti,
                                  label_file=args.tl,
                                  batch_size=args.b,
@@ -287,13 +289,13 @@ def train(args):
                                  num_channels=args.num_channels,
                                  label_len=label_len)
 
-    print("args.vi: %s" % args.vi)
-    print("args.vl: %s" % args.vl)
-    print("batch_size: %s" % args.b)
-    print("img_size: %s" % args.img_size)
-    print("input_length: %s" % pred_length)
-    print("num_channels: %s" % args.num_channels)
-    print("label_len: %s" % label_len)
+    # print("args.vi: %s" % args.vi)
+    # print("args.vl: %s" % args.vl)
+    # print("batch_size: %s" % args.b)
+    # print("img_size: %s" % args.img_size)
+    # print("input_length: %s" % pred_length)
+    # print("num_channels: %s" % args.num_channels)
+    # print("label_len: %s" % label_len)
     val_gen = TextImageGenerator(img_dir=args.vi,
                                  label_file=args.vl,
                                  batch_size=args.b,
