@@ -326,7 +326,7 @@ def train(args):
                         initial_epoch=args.start_epoch)
 
 
-# def train_1(args):
+# def train(args):
 #     """Train the OCR model
 #     """
 #     ckpt_dir = os.path.dirname(args.c)
@@ -336,17 +336,25 @@ def train(args):
 #     if args.log != '' and not os.path.isdir(args.log):
 #         os.makedirs(args.log)
 #     label_len = args.label_len
+#     # print("label_len : %d" % label_len)
 #
-#     input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
+#     # input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
+#     input_tensor, y_pred = model_seq_rec()
+#     # print("input_tensor shape: %s" % input_tensor.shape)
+#     # print("y_pred shape: %s" % y_pred.shape)
 #
 #     labels = Input(name='the_labels', shape=[label_len], dtype='float32')
 #     input_length = Input(name='input_length', shape=[1], dtype='int32')
 #     label_length = Input(name='label_length', shape=[1], dtype='int32')
 #
 #     pred_length = int(y_pred.shape[1])
+#     # print("pred_length : %d" % pred_length)
+#
 #     # Keras doesn't currently support loss funcs with extra parameters
 #     # so CTC loss is implemented in a lambda layer
 #     loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
+#     # print("loss_out : %s" % loss_out)
+#     # print("loss_out shape: %s" % loss_out.shape)
 #
 #     # clipnorm seems to speeds up convergence
 #     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
@@ -382,6 +390,12 @@ def train(args):
 #         tfboard_cb = TensorBoard(log_dir=args.log, write_images=True)
 #         cbs.append(tfboard_cb)
 #
+#     print("train_gen.get_data: %s" % train_gen.get_data())
+#     print("steps_per_epoch: %d" % ((train_gen._num_examples+train_gen._batch_size-1) // train_gen._batch_size))
+#     print("val_gen.get_data: %s" % val_gen.get_data())
+#     print("validation_steps: %d" % ((val_gen._num_examples+val_gen._batch_size-1) // val_gen._batch_size))
+#     print("args.start_epoch: %d" % args.start_epoch)
+#
 #     model.fit_generator(generator=train_gen.get_data(),
 #                         steps_per_epoch=(train_gen._num_examples+train_gen._batch_size-1) // train_gen._batch_size,
 #                         epochs=args.n,
@@ -389,7 +403,6 @@ def train(args):
 #                         validation_steps=(val_gen._num_examples+val_gen._batch_size-1) // val_gen._batch_size,
 #                         callbacks=cbs,
 #                         initial_epoch=args.start_epoch)
-
 
 def export(args):
     """Export the model to a hdf5 file
