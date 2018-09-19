@@ -43,10 +43,14 @@ NUM_CHARS = len(CHARS)
 # an internal Keras loss function
 def ctc_lambda_func(args):
     y_pred, labels, input_length, label_length = args
-    print('y_pred', y_pred.shape)
+    print('y_pred shape : %s' % y_pred.shape)
     # y_pred = y_pred[:, :, 0, :]             # !!!!!!!!! 基于GRU要注释掉这一行
-    print('y_pred', y_pred.shape)
-
+    print('y_pred shape : %s' % y_pred.shape)
+    print('labels shape : %s' % labels.shape)
+    print('input_length shape : %s' % input_length.shape)
+    print('input_length : %s' % input_length)
+    print('label_length shape : %s' % label_length.shape)
+    print('label_length : %s' % label_length)
     return K.ctc_batch_cost(labels, y_pred, input_length, label_length)
 
 
@@ -55,26 +59,26 @@ def build_model(width, num_channels):
     input_tensor = Input(name='the_input', shape=(width, 48, num_channels), dtype='float32')
     x = input_tensor
     base_conv = 32
-    print('input_tensor', x.shape)
+    # print('input_tensor', x.shape)
 
     for i in range(3):
         x = Conv2D(base_conv * (2 ** (i)), (3, 3), padding="same")(x)
-        print('Conv2D', x.shape)
+        # print('Conv2D', x.shape)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
         x = MaxPooling2D(pool_size=(2, 2))(x)
-        print('MaxPooling2D', x.shape)
+        # print('MaxPooling2D', x.shape)
 
     x = Conv2D(256, (5, 5))(x)
-    print('Conv2D', x.shape)
+    # print('Conv2D', x.shape)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
     x = Conv2D(1024, (1, 1))(x)
-    print('Conv2D', x.shape)
+    # print('Conv2D', x.shape)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
     x = Conv2D(NUM_CHARS+1, (1, 1))(x)
-    print('Conv2D', x.shape)
+    # print('Conv2D', x.shape)
     x = Activation('softmax')(x)
 
     y_pred = x
@@ -141,7 +145,7 @@ def encode_label(s):
         # print(c)
         label[i] = CHARS_DICT[c]
 
-    print('label', label)
+    # print('label', label)
     return label
 
 
@@ -233,18 +237,25 @@ def train(args):
     if args.log != '' and not os.path.isdir(args.log):
         os.makedirs(args.log)
     label_len = args.label_len
+    print("label_len : %d" % label_len)
 
     # input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
     input_tensor, y_pred = model_seq_rec()
+    print("input_tensor shape: %s" % input_tensor.shape)
+    print("y_pred shape: %s" % y_pred.shape)
 
     labels = Input(name='the_labels', shape=[label_len], dtype='float32')
     input_length = Input(name='input_length', shape=[1], dtype='int32')
     label_length = Input(name='label_length', shape=[1], dtype='int32')
 
     pred_length = int(y_pred.shape[1])
+    print("pred_length : %d" % pred_length)
+
     # Keras doesn't currently support loss funcs with extra parameters
     # so CTC loss is implemented in a lambda layer
     loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
+    print("loss_out : %s" % loss_out)
+    print("loss_out shape: %s" % loss_out.shape)
 
     # clipnorm seems to speeds up convergence
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
@@ -309,69 +320,69 @@ def train(args):
                         initial_epoch=args.start_epoch)
 
 
-def train_1(args):
-    """Train the OCR model
-    """
-    ckpt_dir = os.path.dirname(args.c)
-    if not os.path.isdir(ckpt_dir):
-        os.makedirs(ckpt_dir)
-
-    if args.log != '' and not os.path.isdir(args.log):
-        os.makedirs(args.log)
-    label_len = args.label_len
-
-    input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
-
-    labels = Input(name='the_labels', shape=[label_len], dtype='float32')
-    input_length = Input(name='input_length', shape=[1], dtype='int32')
-    label_length = Input(name='label_length', shape=[1], dtype='int32')
-
-    pred_length = int(y_pred.shape[1])
-    # Keras doesn't currently support loss funcs with extra parameters
-    # so CTC loss is implemented in a lambda layer
-    loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
-
-    # clipnorm seems to speeds up convergence
-    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
-
-    model = Model(inputs=[input_tensor, labels, input_length, label_length], outputs=loss_out)
-
-    # the loss calc occurs elsewhere, so use a dummy lambda func for the loss
-    model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=sgd)
-
-    if args.pre != '':
-        model.load_weights(args.pre)
-
-    train_gen = TextImageGenerator(img_dir=args.ti,
-                                 label_file=args.tl,
-                                 batch_size=args.b,
-                                 img_size=args.img_size,
-                                 input_length=pred_length,
-                                 num_channels=args.num_channels,
-                                 label_len=label_len)
-
-    val_gen = TextImageGenerator(img_dir=args.vi,
-                                 label_file=args.vl,
-                                 batch_size=args.b,
-                                 img_size=args.img_size,
-                                 input_length=pred_length,
-                                 num_channels=args.num_channels,
-                                 label_len=label_len)
-
-    checkpoints_cb = ModelCheckpoint(args.c, period=1)
-    cbs = [checkpoints_cb]
-
-    if args.log != '':
-        tfboard_cb = TensorBoard(log_dir=args.log, write_images=True)
-        cbs.append(tfboard_cb)
-
-    model.fit_generator(generator=train_gen.get_data(),
-                        steps_per_epoch=(train_gen._num_examples+train_gen._batch_size-1) // train_gen._batch_size,
-                        epochs=args.n,
-                        validation_data=val_gen.get_data(),
-                        validation_steps=(val_gen._num_examples+val_gen._batch_size-1) // val_gen._batch_size,
-                        callbacks=cbs,
-                        initial_epoch=args.start_epoch)
+# def train_1(args):
+#     """Train the OCR model
+#     """
+#     ckpt_dir = os.path.dirname(args.c)
+#     if not os.path.isdir(ckpt_dir):
+#         os.makedirs(ckpt_dir)
+#
+#     if args.log != '' and not os.path.isdir(args.log):
+#         os.makedirs(args.log)
+#     label_len = args.label_len
+#
+#     input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
+#
+#     labels = Input(name='the_labels', shape=[label_len], dtype='float32')
+#     input_length = Input(name='input_length', shape=[1], dtype='int32')
+#     label_length = Input(name='label_length', shape=[1], dtype='int32')
+#
+#     pred_length = int(y_pred.shape[1])
+#     # Keras doesn't currently support loss funcs with extra parameters
+#     # so CTC loss is implemented in a lambda layer
+#     loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
+#
+#     # clipnorm seems to speeds up convergence
+#     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
+#
+#     model = Model(inputs=[input_tensor, labels, input_length, label_length], outputs=loss_out)
+#
+#     # the loss calc occurs elsewhere, so use a dummy lambda func for the loss
+#     model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=sgd)
+#
+#     if args.pre != '':
+#         model.load_weights(args.pre)
+#
+#     train_gen = TextImageGenerator(img_dir=args.ti,
+#                                  label_file=args.tl,
+#                                  batch_size=args.b,
+#                                  img_size=args.img_size,
+#                                  input_length=pred_length,
+#                                  num_channels=args.num_channels,
+#                                  label_len=label_len)
+#
+#     val_gen = TextImageGenerator(img_dir=args.vi,
+#                                  label_file=args.vl,
+#                                  batch_size=args.b,
+#                                  img_size=args.img_size,
+#                                  input_length=pred_length,
+#                                  num_channels=args.num_channels,
+#                                  label_len=label_len)
+#
+#     checkpoints_cb = ModelCheckpoint(args.c, period=1)
+#     cbs = [checkpoints_cb]
+#
+#     if args.log != '':
+#         tfboard_cb = TensorBoard(log_dir=args.log, write_images=True)
+#         cbs.append(tfboard_cb)
+#
+#     model.fit_generator(generator=train_gen.get_data(),
+#                         steps_per_epoch=(train_gen._num_examples+train_gen._batch_size-1) // train_gen._batch_size,
+#                         epochs=args.n,
+#                         validation_data=val_gen.get_data(),
+#                         validation_steps=(val_gen._num_examples+val_gen._batch_size-1) // val_gen._batch_size,
+#                         callbacks=cbs,
+#                         initial_epoch=args.start_epoch)
 
 
 def export(args):
