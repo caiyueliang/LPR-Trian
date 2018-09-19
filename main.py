@@ -64,30 +64,30 @@ def build_model(width, num_channels):
     input_tensor = Input(name='the_input', shape=(width, 48, num_channels), dtype='float32')
     x = input_tensor
     base_conv = 32
-    print('input_tensor', x.shape)
+    # print('input_tensor', x.shape)
 
     for i in range(3):
         x = Conv2D(base_conv * (2 ** (i)), (3, 3), padding="same")(x)
-        print('Conv2D', x.shape)
+        # print('Conv2D', x.shape)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
         x = MaxPooling2D(pool_size=(2, 2))(x)
-        print('MaxPooling2D', x.shape)
+        # print('MaxPooling2D', x.shape)
 
     x = Conv2D(256, (5, 5))(x)
-    print('Conv2D', x.shape)
+    # print('Conv2D', x.shape)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
     x = Conv2D(1024, (1, 1))(x)
-    print('Conv2D', x.shape)
+    # print('Conv2D', x.shape)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
     x = Conv2D(NUM_CHARS+1, (1, 1))(x)
-    print('Conv2D', x.shape)
+    # print('Conv2D', x.shape)
     x = Activation('softmax')(x)
 
     y_pred = x
-    return input_tensor, y_pred
+    # return input_tensor, y_pred
 
 
 # 基于GRU车牌识别模型
@@ -97,41 +97,41 @@ def model_seq_rec():
     input_tensor = Input(name='the_input', shape=(164, 48, 3), dtype='float32')
     x = input_tensor
     base_conv = 32
-    print('input_tensor', x.shape)
+    # print('input_tensor', x.shape)
 
     for i in range(3):
         x = Conv2D(base_conv * (2 ** i), (3, 3))(x)
-        print('Conv2D', x.shape)
+        # print('Conv2D', x.shape)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
         x = MaxPooling2D(pool_size=(2, 2))(x)
-        print('MaxPooling2D', x.shape)          # [None, 18, 4, 128]
+        # print('MaxPooling2D', x.shape)          # [None, 18, 4, 128]
 
     conv_shape = x.get_shape()
-    print(conv_shape)
+    # print(conv_shape)
     x = Reshape(target_shape=(int(conv_shape[1]), int(conv_shape[2] * conv_shape[3])))(x)
-    print('Reshape', x.shape)                   # [None, 18, 512]
+    # print('Reshape', x.shape)                   # [None, 18, 512]
     x = Dense(32)(x)
-    print('Dense', x.shape)                     # [None, 18, 32]
+    # print('Dense', x.shape)                     # [None, 18, 32]
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
 
     gru_1 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru1')(x)
-    print('gru_1', gru_1.shape)                 # [None, None, 256]
+    # print('gru_1', gru_1.shape)                 # [None, None, 256]
     gru_1b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru1_b')(x)
-    print('gru_1b', gru_1b.shape)               # [None, None, 256]
+    # print('gru_1b', gru_1b.shape)               # [None, None, 256]
     gru1_merged = add([gru_1, gru_1b])
-    print('gru1_merged', gru1_merged.shape)     # [None, None, 256]
+    # print('gru1_merged', gru1_merged.shape)     # [None, None, 256]
 
     gru_2 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru2')(gru1_merged)
-    print('gru_2', gru_2.shape)                 # [None, None, 256]
+    # print('gru_2', gru_2.shape)                 # [None, None, 256]
     gru_2b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru2_b')(gru1_merged)
-    print('gru_2b', gru_2b.shape)               # [None, None, 256]
+    # print('gru_2b', gru_2b.shape)               # [None, None, 256]
     x = concatenate([gru_2, gru_2b])
-    print('concatenate', x.shape)               # [None, None, 512]
+    # print('concatenate', x.shape)               # [None, None, 512]
     x = Dropout(0.25)(x)
     x = Dense(n_class, kernel_initializer='he_normal', activation='softmax')(x)
-    print('Dense', x.shape)                     # [None, 18, 84]
+    # print('Dense', x.shape)                     # [None, 18, 84]
 
     # base_model = Model(inputs=input_tensor, outputs=x)
     # base_model.load_weights(model_path)
@@ -144,13 +144,13 @@ def model_seq_rec():
 # ======================================================================================================================
 def encode_label(s):
     s = s.decode("utf-8")
-    print(s)
+    # print(s)
 
     label = np.zeros([len(s)])
     for i, c in enumerate(s):
         label[i] = CHARS_DICT[c]
 
-    print('label', label)
+    # print('label', label)
     return label
 
 
@@ -243,25 +243,25 @@ def train(args):
     if args.log != '' and not os.path.isdir(args.log):
         os.makedirs(args.log)
     label_len = args.label_len
-    print("label_len : %d" % label_len)
+    # print("label_len : %d" % label_len)
 
     # input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
     input_tensor, y_pred = model_seq_rec()
-    print("input_tensor shape: %s" % input_tensor.shape)
-    print("y_pred shape: %s" % y_pred.shape)
+    # print("input_tensor shape: %s" % input_tensor.shape)
+    # print("y_pred shape: %s" % y_pred.shape)
 
     labels = Input(name='the_labels', shape=[label_len], dtype='float32')
     input_length = Input(name='input_length', shape=[1], dtype='int32')
     label_length = Input(name='label_length', shape=[1], dtype='int32')
 
     pred_length = int(y_pred.shape[1])
-    print("pred_length : %d" % pred_length)
+    # print("pred_length : %d" % pred_length)
 
     # Keras doesn't currently support loss funcs with extra parameters
     # so CTC loss is implemented in a lambda layer
     loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
-    print("loss_out : %s" % loss_out)
-    print("loss_out shape: %s" % loss_out.shape)
+    # print("loss_out : %s" % loss_out)
+    # print("loss_out shape: %s" % loss_out.shape)
 
     # clipnorm seems to speeds up convergence
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
