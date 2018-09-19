@@ -44,14 +44,17 @@ NUM_CHARS = len(CHARS)
 def ctc_lambda_func(args):
     y_pred, labels, input_length, label_length = args
     print('y_pred shape : %s' % y_pred.shape)
-    y_pred = y_pred[:, :, 0, :]             # !!!!!!!!! 基于GRU要注释掉这一行
+    # y_pred = y_pred[:, :, 0, :]             # !!!!!!!!! 基于GRU要注释掉这一行
     print('y_pred shape : %s' % y_pred.shape)
     print('labels shape : %s' % labels.shape)
     print('input_length shape : %s' % input_length.shape)
     print('input_length : %s' % input_length)
     print('label_length shape : %s' % label_length.shape)
     print('label_length : %s' % label_length)
-    return K.ctc_batch_cost(labels, y_pred, input_length, label_length)
+    loss = K.ctc_batch_cost(labels, y_pred, input_length, label_length)
+    print('loss shape : %s' % loss.shape)
+    print('loss : %s' % loss)
+    return loss
 
 
 # ======================================================================================================================
@@ -89,7 +92,7 @@ def build_model(width, num_channels):
 def model_seq_rec():
     width, height, n_len, n_class = 164, 48, 7, NUM_CHARS + 1
     rnn_size = 256
-    input_tensor = Input((164, 48, 3))
+    input_tensor = Input(name='the_input', shape=(164, 48, 3), dtype='float32')
     x = input_tensor
     base_conv = 32
     print('input_tensor', x.shape)
@@ -240,8 +243,8 @@ def train(args):
     label_len = args.label_len
     print("label_len : %d" % label_len)
 
-    input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
-    # input_tensor, y_pred = model_seq_rec()
+    # input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
+    input_tensor, y_pred = model_seq_rec()
     print("input_tensor shape: %s" % input_tensor.shape)
     print("y_pred shape: %s" % y_pred.shape)
 
