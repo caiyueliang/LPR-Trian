@@ -148,7 +148,11 @@ class SignOcr:
 
 
 if __name__ == '__main__':
-    image_dir = "../Data/car_recognition/train/blue_2"
+    # image_dir = "../Data/car_recognition/test/blue_2"
+    # image_dir = "../Data/car_recognition/train/blue_2"
+
+    # image_dir = "../Data/car_recognition/train/blue_min_1"
+    image_dir = "../Data/car_recognition/train/blue_yue_1"
 
     # label_file = "./label.txt"
     # index_file = "./index.txt"
