@@ -46,6 +46,7 @@ class SignOcr:
     def save_label(self, file_name, plate):
         print('save_label ...')
         data = file_name + ":" + plate + '\n'
+        print('[plate] %d' % len(plate))
 
         if len(plate) == 7:  # 正常车牌
             common.write_data(self.label_normal_file, data, 'a+')
@@ -76,7 +77,6 @@ class SignOcr:
             plate = self.img_files[start_i].split('/')[-1].split('_')[1].split('.')[0]
             plate = plate.decode('utf8')
             print('[plate] %s' % plate)
-            print('[plate] %d' % len(plate))
 
             self.img = cv2.imread(self.img_files[start_i])
             self.img = cv2.resize(self.img, (self.img.shape[1]*times, self.img.shape[0]*times))
@@ -114,6 +114,7 @@ class SignOcr:
 
                 if k == ord('c'):
                     plate = raw_input('input new plate: ')
+                    plate = plate.decode('utf8')
                     self.save_label(self.img_files[start_i], plate)
                     # if len(plate) == 7:     # 正常车牌
                     #     common.write_data(self.label_normal_file, data, 'a+')
