@@ -3,7 +3,6 @@ import cv2
 import sys
 import os
 import time
-
 import common as common
 
 # ['EVENT_FLAG_ALTKEY', 'EVENT_FLAG_CTRLKEY', 'EVENT_FLAG_LBUTTON', 'EVENT_FLAG_MBUTTON', 'EVENT_FLAG_RBUTTON',
@@ -112,7 +111,7 @@ class SignOcr:
                     self.img = cv2.resize(self.img, (self.img.shape[1]*times, self.img.shape[0]*times))
                     cv2.imshow('sign_image', self.img)
                     break
-                    
+
                 if k == ord('c'):
                     plate = raw_input('input new plate: ')
                     self.save_label(self.img_files[start_i], plate)
