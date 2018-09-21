@@ -45,7 +45,7 @@ def ctc_lambda_func(args):
     y_pred, labels, input_length, label_length = args
     # print('y_pred shape : %s' % y_pred.shape)
 
-    # y_pred = y_pred[:, :, 0, :]             # !!!!!!!!! 基于GRU要注释掉这一行
+    y_pred = y_pred[:, :, 0, :]             # !!!!!!!!! 基于GRU要注释掉这一行
 
     # print('y_pred shape : %s' % y_pred.shape)
     # print('labels shape : %s' % labels.shape)
@@ -53,10 +53,11 @@ def ctc_lambda_func(args):
     # print('input_length : %s' % input_length)
     # print('label_length shape : %s' % label_length.shape)
     # print('label_length : %s' % label_length)
-    loss = K.ctc_batch_cost(labels, y_pred, input_length, label_length)
+
+    # loss = K.ctc_batch_cost(labels, y_pred, input_length, label_length)
     # print('loss shape : %s' % loss.shape)
     # print('loss : %s' % loss)
-    return loss
+    return K.ctc_batch_cost(labels, y_pred, input_length, label_length)
 
 
 # ======================================================================================================================
@@ -87,7 +88,7 @@ def build_model(width, num_channels):
     x = Activation('softmax')(x)
 
     y_pred = x
-    # return input_tensor, y_pred
+    return input_tensor, y_pred
 
 
 # 基于GRU车牌识别模型
@@ -244,8 +245,8 @@ def train(args):
         os.makedirs(args.log)
     label_len = args.label_len
 
-    # input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
-    input_tensor, y_pred = model_seq_rec()
+    input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
+    # input_tensor, y_pred = model_seq_rec()
 
     labels = Input(name='the_labels', shape=[label_len], dtype='float32')
     input_length = Input(name='input_length', shape=[1], dtype='int32')
@@ -269,15 +270,15 @@ def train(args):
         if os.path.exists(args.pre):
             model.load_weights(args.pre)
 
-    # print("args.ti: %s" % args.ti)
-    # print("args.tl: %s" % args.tl)
-    # print("args.vi: %s" % args.vi)
-    # print("args.vl: %s" % args.vl)
-    # print("batch_size: %s" % args.b)
-    # print("img_size: %s" % args.img_size)
-    # print("input_length: %s" % pred_length)
-    # print("num_channels: %s" % args.num_channels)
-    # print("label_len: %s" % label_len)
+    print("args.ti: %s" % args.ti)
+    print("args.tl: %s" % args.tl)
+    print("args.vi: %s" % args.vi)
+    print("args.vl: %s" % args.vl)
+    print("batch_size: %s" % args.b)
+    print("img_size: %s" % args.img_size)
+    print("input_length: %s" % pred_length)
+    print("num_channels: %s" % args.num_channels)
+    print("label_len: %s" % label_len)
     train_gen = TextImageGenerator(img_dir=args.ti,
                                    label_file=args.tl,
                                    batch_size=args.b,
