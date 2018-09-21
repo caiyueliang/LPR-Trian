@@ -45,7 +45,7 @@ def ctc_lambda_func(args):
     y_pred, labels, input_length, label_length = args
     # print('y_pred shape : %s' % y_pred.shape)
 
-    y_pred = y_pred[:, :, 0, :]             # !!!!!!!!! 基于GRU要注释掉这一行
+    # y_pred = y_pred[:, :, 0, :]             # !!!!!!!!! 基于GRU要注释掉这一行
 
     # print('y_pred shape : %s' % y_pred.shape)
     # print('labels shape : %s' % labels.shape)
@@ -245,8 +245,8 @@ def train(args):
         os.makedirs(args.log)
     label_len = args.label_len
 
-    input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
-    # input_tensor, y_pred = model_seq_rec()
+    # input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
+    input_tensor, y_pred = model_seq_rec()
 
     labels = Input(name='the_labels', shape=[label_len], dtype='float32')
     input_length = Input(name='input_length', shape=[1], dtype='int32')
@@ -259,7 +259,7 @@ def train(args):
     loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
 
     # clipnorm seems to speeds up convergence
-    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
+    sgd = SGD(lr=0.001, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
 
     model = Model(inputs=[input_tensor, labels, input_length, label_length], outputs=loss_out)
 
