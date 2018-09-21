@@ -279,12 +279,12 @@ def train(args):
     # print("num_channels: %s" % args.num_channels)
     # print("label_len: %s" % label_len)
     train_gen = TextImageGenerator(img_dir=args.ti,
-                                 label_file=args.tl,
-                                 batch_size=args.b,
-                                 img_size=args.img_size,
-                                 input_length=pred_length,
-                                 num_channels=args.num_channels,
-                                 label_len=label_len)
+                                   label_file=args.tl,
+                                   batch_size=args.b,
+                                   img_size=args.img_size,
+                                   input_length=pred_length,
+                                   num_channels=args.num_channels,
+                                   label_len=label_len)
 
     val_gen = TextImageGenerator(img_dir=args.vi,
                                  label_file=args.vl,
@@ -308,6 +308,63 @@ def train(args):
                         validation_steps=(val_gen._num_examples+val_gen._batch_size-1) // val_gen._batch_size,
                         callbacks=cbs,
                         initial_epoch=args.start_epoch)
+
+# # ======================================================================================================================
+# # 快速解码
+# def fast_decode(self, y_pred):
+#     results = ""
+#     confidence = 0.0
+#     table_pred = y_pred.reshape(-1, len(CHARS) + 1)  # table_pred shape: (16, 84),都是各种概率值
+#     print('[table_pred] shape: ', table_pred.shape)     # 16表示字符串的长度（里面存在”空“）
+#     print(table_pred)                                   # 84表示类别（含”空“类别）
+#
+#     res = table_pred.argmax(axis=1)  # 获取概率值最高的序号（对应chars里的文字）
+#     print(res)
+#     for i, one in enumerate(res):
+#         # print('i, one', i, one)
+#         if one < len(CHARS) and (i == 0 or (one != res[i - 1])):
+#             results += CHARS[one]
+#             confidence += table_pred[i][one]
+#             # print('results', results, table_pred[i][one])
+#
+#     print(results)
+#
+#     if len(results) != 0:
+#         confidence /= len(results)
+#         return results, confidence
+#     else:
+#         return results, 0.0
+#
+#
+# # 基于GRU车牌识别模型
+# def model_seq_rec_1(model_path):
+#     width, height, n_len, n_class = 164, 48, 7, len(CHARS) + 1
+#     rnn_size = 256
+#     input_tensor = Input((164, 48, 3))
+#     x = input_tensor
+#     base_conv = 32
+#     for i in range(3):
+#         x = Conv2D(base_conv * (2 ** i), (3, 3))(x)
+#         x = BatchNormalization()(x)
+#         x = Activation('relu')(x)
+#         x = MaxPooling2D(pool_size=(2, 2))(x)
+#     conv_shape = x.get_shape()
+#     x = Reshape(target_shape=(int(conv_shape[1]), int(conv_shape[2] * conv_shape[3])))(x)
+#     x = Dense(32)(x)
+#     x = BatchNormalization()(x)
+#     x = Activation('relu')(x)
+#     gru_1 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru1')(x)
+#     gru_1b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru1_b')(x)
+#     gru1_merged = add([gru_1, gru_1b])
+#     gru_2 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru2')(gru1_merged)
+#     gru_2b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru2_b')(
+#         gru1_merged)
+#     x = concatenate([gru_2, gru_2b])
+#     x = Dropout(0.25)(x)
+#     x = Dense(n_class, kernel_initializer='he_normal', activation='softmax')(x)
+#     base_model = Model(inputs=input_tensor, outputs=x)
+#     base_model.load_weights(model_path)
+#     return base_model
 
 
 # def train(args):
@@ -391,7 +448,8 @@ def train(args):
 def export(args):
     """Export the model to a hdf5 file
     """
-    input_tensor, y_pred = build_model(None, args.num_channels)
+    # input_tensor, y_pred = build_model(None, args.num_channels)
+    input_tensor, y_pred = model_seq_rec()
     model = Model(inputs=input_tensor, outputs=y_pred)
     model.save(args.m)
     print('model saved to {}'.format(args.m))
@@ -428,14 +486,14 @@ def main():
     args.func(args)
 
 
-def test_model_layers():
-    input_tensor, y_pred = build_model(160, 3)
-    my_model = Model(inputs=input_tensor, outputs=y_pred)
-
-    x = np.zeros([1, 160, 40, 3])
-    print('x', x.shape)
-    y = my_model.predict(x)  # 预测
-    print('y', y.shape)
+# def test_model_layers():
+#     input_tensor, y_pred = build_model(160, 3)
+#     my_model = Model(inputs=input_tensor, outputs=y_pred)
+#
+#     x = np.zeros([1, 160, 40, 3])
+#     print('x', x.shape)
+#     y = my_model.predict(x)  # 预测
+#     print('y', y.shape)
 
 
 def test_model_layers_1():
