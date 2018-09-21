@@ -266,7 +266,8 @@ def train(args):
     model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=sgd)
 
     if args.pre != '':
-        model.load_weights(args.pre)
+        if os.path.exists(args.pre):
+            model.load_weights(args.pre)
 
     # print("args.ti: %s" % args.ti)
     # print("args.tl: %s" % args.tl)
