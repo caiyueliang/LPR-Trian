@@ -4,6 +4,7 @@ import argparse
 
 import cv2
 import numpy as np
+from math import isnan
 from keras.layers import *
 from keras import backend as K
 from keras.layers import Input, Activation, Conv2D, BatchNormalization, Lambda, MaxPooling2D, Dropout
@@ -178,6 +179,7 @@ class TextImageGenerator:
         self.filenames = []
         self.labels = None
 
+        self.error_file = {}
         self.init()
 
     def init(self):
@@ -213,7 +215,22 @@ class TextImageGenerator:
         # labels = np.zeros([batch_size, self._label_len])
         for j, i in enumerate(range(start, end)):
             fname = self._filenames[i]
-            img = cv2.imread(os.path.join(self._img_dir, fname))
+            file_name = os.path.join(self._img_dir, fname)
+            # file_name = file_name.decode('utf8')
+            img = cv2.imread(file_name)
+
+            if img is None:
+                if self.error_file.has_key(file_name):
+                    self.error_file[file_name] += 1
+                else:
+                    self.error_file[file_name] = 0
+                print(len(self.error_file))
+                print(self.error_file)
+                # print(file_name)
+                # print('file_name: ', file_name)
+                # print(type(file_name))
+                # print(img.shape)
+
             images[j, ...] = img
         images = np.transpose(images, axes=[0, 2, 1, 3])
         labels = self._labels[start:end, ...]
@@ -227,6 +244,9 @@ class TextImageGenerator:
                   'input_length': input_length,
                   'label_length': label_length,
                   }
+
+        # print(outputs)
+        # print(inputs)
         return inputs, outputs
 
     def get_data(self):
@@ -259,7 +279,7 @@ def train(args):
     loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
 
     # clipnorm seems to speeds up convergence
-    sgd = SGD(lr=0.001, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
+    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
 
     model = Model(inputs=[input_tensor, labels, input_length, label_length], outputs=loss_out)
 
