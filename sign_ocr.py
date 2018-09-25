@@ -151,14 +151,16 @@ class SignOcr:
 if __name__ == '__main__':
     # image_dir = "../Data/car_recognition/test/blue_2"
     # image_dir = "../Data/car_recognition/test/blue_3"
+    image_dir = "../Data/car_recognition/test/blue_failed_1"
 
-    # image_dir = "../Data/car_recognition/train/blue_min_1"
+    # image_dir = "../Data/car_recognition/train/blue_闽_1"
     # image_dir = "../Data/car_recognition/train/blue_yue_1"
     # image_dir = "../Data/car_recognition/train/blue_粤_1"
     # image_dir = "../Data/car_recognition/train/blue_鄂_1"
     # image_dir = "../Data/car_recognition/train/blue_京_1"
     # image_dir = "../Data/car_recognition/train/blue_苏_1"
-    image_dir = "../Data/car_recognition/train/blue_浙_1"
+    # image_dir = "../Data/car_recognition/train/blue_浙_1"
+    # image_dir = "../Data/car_recognition/train/blue_failed_1"
 
     # label_file = "./label.txt"
     # index_file = "./index.txt"
