@@ -163,60 +163,116 @@ def parse_line(line):
     return filename, label
 
 
+def label_standard(label):
+    label_len = len(label)
+
+    new_label = label.copy()
+    if label_len == 7:
+        new_label = np.append(label, 83.)
+        # new_label.append(83.)
+    return label_len, new_label
+
+
 class TextImageGenerator:
     def __init__(self, img_dir, label_file, batch_size, img_size, input_length, num_channels=3, label_len=5):
         self._img_dir = img_dir
         self._label_file = label_file
         self._batch_size = batch_size
         self._num_channels = num_channels
-        self._label_len = label_len
+        # self._label_len = label_len
         self._input_len = input_length
         self._img_w, self._img_h = img_size
 
         self._num_examples = 0
         self._next_index = 0
         self._num_epoches = 0
-        self.filenames = []
-        self.labels = None
+
+        self.label_flag = 0
+
+        self._filenames = None
+        self._labels = None
+        self._label_len = 0
+
+        self.filenames_1 = None
+        self.labels_1 = None
+        # self.label_len_1 = None
+
+        self.filenames_2 = None
+        self.labels_2 = None
+        # self.label_len_2 = None
 
         self.error_file = {}
+
         self.init()
 
     def init(self):
-        self.labels = []
+        self.filenames_1 = []
+        self.labels_1 = []
+        # self.label_len_1 = []
+
+        self.filenames_2 = []
+        self.labels_2 = []
+        # self.label_len_2 = []
+
         with open(self._label_file) as f:
             for line in f:
                 filename, label = parse_line(line)
-                self.filenames.append(filename)
-                self.labels.append(label)
+                if len(label) == 7:
+                    self.filenames_1.append(filename)
+                    self.labels_1.append(label)
+                    # self.label_len_1.append([len(label)])
+                elif len(label) == 8:
+                    self.filenames_2.append(filename)
+                    self.labels_2.append(label)
+                    # self.label_len_2.append([len(label)])
+
                 self._num_examples += 1
-        # print(self.labels)
-        self.labels = np.float32(self.labels)
+
+        self.labels_1 = np.float32(self.labels_1)
+        self.labels_2 = np.float32(self.labels_2)
+
+        print('[init] labels_1 len: %d, label_2 len: %d, total len: %d' % (len(self.labels_1), len(self.labels_2), self._num_examples))
+        assert len(self.labels_1) + len(self.labels_2) == self._num_examples
 
     def next_batch(self):
         # Shuffle the data
         if self._next_index == 0:
-            perm = np.arange(self._num_examples)
-            np.random.shuffle(perm)
-            self._filenames = [self.filenames[i] for i in perm]
-            self._labels = self.labels[perm]
+            if self.label_flag == 0:
+                perm = np.arange(len(self.labels_1))
+                np.random.shuffle(perm)
+                self._filenames = [self.filenames_1[i] for i in perm]
+                self._labels = [self.labels_1[i] for i in perm]
+                self._label_len = 7
+                self.label_flag = 1
+            else:
+                perm = np.arange(len(self.labels_2))
+                np.random.shuffle(perm)
+                self._filenames = [self.filenames_2[i] for i in perm]
+                self._labels = [self.labels_2[i] for i in perm]
+                self._label_len = 8
+                self.label_flag = 0
+                self._num_epoches += 1
+
+            print(self._label_len)
+            print(self._labels)
 
         batch_size = self._batch_size
         start = self._next_index
         end = self._next_index + batch_size
-        if end >= self._num_examples:
+        if end >= len(self._labels):
             self._next_index = 0
-            self._num_epoches += 1
-            end = self._num_examples
-            batch_size = self._num_examples - start
+            # self._num_epoches += 1
+            end = len(self._labels)
+            batch_size = len(self._labels) - start
         else:
             self._next_index = end
+
         images = np.zeros([batch_size, self._img_h, self._img_w, self._num_channels])
         # labels = np.zeros([batch_size, self._label_len])
         for j, i in enumerate(range(start, end)):
+            print(j, i)
             fname = self._filenames[i]
             file_name = os.path.join(self._img_dir, fname)
-            # file_name = file_name.decode('utf8')
             img = cv2.imread(file_name)
 
             if img is None:
@@ -226,18 +282,20 @@ class TextImageGenerator:
                     self.error_file[file_name] = 0
                 print(len(self.error_file))
                 print(self.error_file)
-                # print(file_name)
-                # print('file_name: ', file_name)
-                # print(type(file_name))
-                # print(img.shape)
 
             images[j, ...] = img
+
         images = np.transpose(images, axes=[0, 2, 1, 3])
-        labels = self._labels[start:end, ...]
+        # self._labels[start:end, ...]
+        # labels = np.array(self._labels[start:end, ...])
+        labels = np.array(self._labels[start:end])
+        # print('[next_batch] labels: ', labels)
+
         input_length = np.zeros([batch_size, 1])
         label_length = np.zeros([batch_size, 1])
         input_length[:] = self._input_len
         label_length[:] = self._label_len
+
         outputs = {'ctc': np.zeros([batch_size])}
         inputs = {'the_input': images,
                   'the_labels': labels,
@@ -245,8 +303,8 @@ class TextImageGenerator:
                   'label_length': label_length,
                   }
 
-        # print(outputs)
-        # print(inputs)
+        print(outputs)
+        print(inputs)
         return inputs, outputs
 
     def get_data(self):
