@@ -52,8 +52,8 @@ def ctc_lambda_func(args):
     # print('labels shape : %s' % labels.shape)
     # print('input_length shape : %s' % input_length.shape)
     # print('input_length : %s' % input_length)
-    # print('label_length shape : %s' % label_length.shape)
-    # print('label_length : %s' % label_length)
+    print('label_length shape : %s' % label_length.shape)
+    print('label_length : %s' % label_length)
 
     # loss = K.ctc_batch_cost(labels, y_pred, input_length, label_length)
     # print('loss shape : %s' % loss.shape)
@@ -163,14 +163,13 @@ def parse_line(line):
     return filename, label
 
 
-def label_standard(label):
-    label_len = len(label)
-
-    new_label = label.copy()
-    if label_len == 7:
-        new_label = np.append(label, 83.)
-        # new_label.append(83.)
-    return label_len, new_label
+# def label_standard(label):
+#     label_len = len(label)
+#
+#     new_label = label.copy()
+#     if label_len == 7:
+#         new_label = np.append(label, 83.)
+#     return label_len, new_label
 
 
 class TextImageGenerator:
@@ -195,11 +194,9 @@ class TextImageGenerator:
 
         self.filenames_1 = None
         self.labels_1 = None
-        # self.label_len_1 = None
 
         self.filenames_2 = None
         self.labels_2 = None
-        # self.label_len_2 = None
 
         self.error_file = {}
 
@@ -208,11 +205,9 @@ class TextImageGenerator:
     def init(self):
         self.filenames_1 = []
         self.labels_1 = []
-        # self.label_len_1 = []
 
         self.filenames_2 = []
         self.labels_2 = []
-        # self.label_len_2 = []
 
         with open(self._label_file) as f:
             for line in f:
@@ -220,11 +215,9 @@ class TextImageGenerator:
                 if len(label) == 7:
                     self.filenames_1.append(filename)
                     self.labels_1.append(label)
-                    # self.label_len_1.append([len(label)])
                 elif len(label) == 8:
                     self.filenames_2.append(filename)
                     self.labels_2.append(label)
-                    # self.label_len_2.append([len(label)])
 
                 self._num_examples += 1
 
