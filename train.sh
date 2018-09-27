@@ -1,7 +1,7 @@
 #!/bin/bash
 
-loop_time=10
-epoch=20
+loop_time=5
+epoch=50
 branch=16
 
 for((i=1;i<=${loop_time};i++));  
