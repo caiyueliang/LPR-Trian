@@ -152,7 +152,8 @@ if __name__ == '__main__':
     # image_dir = "../Data/car_recognition/test/blue_2"
     # image_dir = "../Data/car_recognition/test/blue_3"
     # image_dir = "../Data/car_recognition/test/blue_failed_1"
-    image_dir = "../Data/car_recognition/test/green_2"
+    # image_dir = "../Data/car_recognition/test/green_2"
+    image_dir = "../Data/car_recognition/test/blue_failed_2"
 
     # image_dir = "../Data/car_recognition/train/blue_闽_1"
     # image_dir = "../Data/car_recognition/train/blue_yue_1"
@@ -163,6 +164,7 @@ if __name__ == '__main__':
     # image_dir = "../Data/car_recognition/train/blue_浙_1"
     # image_dir = "../Data/car_recognition/train/blue_failed_1"
     # image_dir = "../Data/car_recognition/train/green_2"
+    # image_dir = "../Data/car_recognition/train/blue_failed_2"
 
     # label_file = "./label.txt"
     # index_file = "./index.txt"

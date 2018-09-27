@@ -1,6 +1,6 @@
 #!/bin/bash
 
-loop_time=5
+loop_time=10
 epoch=20
 branch=16
 

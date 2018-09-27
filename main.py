@@ -279,7 +279,7 @@ def train(args):
     loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
 
     # clipnorm seems to speeds up convergence
-    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
+    sgd = SGD(lr=0.001, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
 
     model = Model(inputs=[input_tensor, labels, input_length, label_length], outputs=loss_out)
 
