@@ -1,8 +1,8 @@
 #!/bin/bash
 
-loop_time=5
-epoch=50
-branch=16
+loop_time=3
+epoch=60
+branch=32
 
 for((i=1;i<=${loop_time};i++));  
 do
