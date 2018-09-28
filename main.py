@@ -2,6 +2,7 @@
 import os
 import argparse
 
+import random
 import cv2
 import numpy as np
 from math import isnan
@@ -11,6 +12,7 @@ from keras.layers import Input, Activation, Conv2D, BatchNormalization, Lambda, 
 from keras.models import Model
 from keras.optimizers import SGD
 from keras.callbacks import ModelCheckpoint, TensorBoard
+
 
 CHARS = ['京', '沪', '津', '渝', '冀', '晋', '蒙', '辽', '吉', '黑',
          '苏', '浙', '皖', '闽', '赣', '鲁', '豫', '鄂', '湘', '粤',
@@ -164,7 +166,7 @@ def parse_line(line):
 
 
 class TextImageGenerator:
-    def __init__(self, img_dir, label_file, batch_size, img_size, input_length, num_channels=3, label_len=5):
+    def __init__(self, img_dir, label_file, batch_size, img_size, input_length, num_channels=3, label_len=5, train=False):
         self._img_dir = img_dir
         self._label_file = label_file
         self._batch_size = batch_size
@@ -178,6 +180,7 @@ class TextImageGenerator:
         self._num_epoches = 0
         self.filenames = []
         self.labels = None
+        self.train = train
 
         self.error_file = {}
         self.init()
@@ -226,10 +229,13 @@ class TextImageGenerator:
                     self.error_file[file_name] = 0
                 print(len(self.error_file))
                 print(self.error_file)
-                # print(file_name)
-                # print('file_name: ', file_name)
-                # print(type(file_name))
-                # print(img.shape)
+
+            if self.train is True:
+                # cv2.imshow('old', img)
+                img = self.random_gaussian(img, 7)              # 随机高斯模糊
+                img = self.random_crop(img, 5)                  # 随机裁剪
+                # cv2.imshow('new', img)
+                # cv2.waitKey(0)
 
             images[j, ...] = img
         images = np.transpose(images, axes=[0, 2, 1, 3])
@@ -248,6 +254,31 @@ class TextImageGenerator:
         # print(outputs)
         # print(inputs)
         return inputs, outputs
+
+    # 随机高斯模糊
+    def random_gaussian(self, img, max_n=7):
+        k = random.randrange(1, max_n, 2)
+        # print(k)
+        if k != 1:
+            img = cv2.GaussianBlur(img, ksize=(k, k), sigmaX=1.5)
+        return img
+
+    # 随机裁剪
+    def random_crop(self, img, max_n=5):
+        imh, imw, _ = img.shape
+
+        top = random.randint(0, max_n)
+        bottom = random.randint(0, max_n)
+        left = random.randint(0, max_n)
+        right = random.randint(0, max_n)
+        # print top, bottom, left, right
+
+        img = img[top:imh-bottom, left:imw-right, :]
+        # print(img.shape)
+        img = cv2.resize(img, (imw, imh))
+        # print(img.shape)
+
+        return img
 
     def get_data(self):
         while True:
@@ -306,7 +337,8 @@ def train(args):
                                    img_size=args.img_size,
                                    input_length=pred_length,
                                    num_channels=args.num_channels,
-                                   label_len=label_len)
+                                   label_len=label_len,
+                                   train=True)
 
     val_gen = TextImageGenerator(img_dir=args.vi,
                                  label_file=args.vl,
@@ -314,7 +346,8 @@ def train(args):
                                  img_size=args.img_size,
                                  input_length=pred_length,
                                  num_channels=args.num_channels,
-                                 label_len=label_len)
+                                 label_len=label_len,
+                                 train=False)
 
     checkpoints_cb = ModelCheckpoint(args.c, period=1, save_best_only=True)
     cbs = [checkpoints_cb]
