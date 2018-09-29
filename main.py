@@ -311,7 +311,7 @@ def train(args):
 
     # clipnorm seems to speeds up convergence
     # sgd = SGD(lr=0.001, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
-    sgd = SGD(lr=0.001, decay=1e-4, momentum=0.9, nesterov=True, clipnorm=5)
+    sgd = SGD(lr=args.lr, decay=1e-4, momentum=0.9, nesterov=True, clipnorm=5)
 
     model = Model(inputs=[input_tensor, labels, input_length, label_length], outputs=loss_out)
 
@@ -326,6 +326,7 @@ def train(args):
     print("args.tl: %s" % args.tl)
     print("args.vi: %s" % args.vi)
     print("args.vl: %s" % args.vl)
+    print("args.lr: %lf" % args.lr)
     print("batch_size: %s" % args.b)
     print("img_size: %s" % args.img_size)
     print("input_length: %s" % pred_length)
@@ -526,6 +527,7 @@ def main():
     parser_train.add_argument('-pre', help='pre trained weight file', default='')
     parser_train.add_argument('-start-epoch', type=int, default=0)
     parser_train.add_argument('-n', type=int, help='number of epochs', required=True)
+    parser_train.add_argument('-lr', type=float, help='learning rate', required=True)
     parser_train.add_argument('-label-len', type=int, help='标签长度', default=7)
     parser_train.add_argument('-c', help='checkpoints format string', required=True)
     parser_train.add_argument('-log', help='tensorboard 日志目录, 默认为空', default='')
