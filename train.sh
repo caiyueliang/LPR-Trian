@@ -1,7 +1,7 @@
 #!/bin/bash
 
 loop_time=3
-epoch=60
+epoch=80
 branch=32
 
 for((i=1;i<=${loop_time};i++));  
