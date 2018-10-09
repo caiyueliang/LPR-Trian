@@ -180,6 +180,6 @@ if __name__ == '__main__':
 
     sign_ocr = SignOcr(image_dir)
 
-    # sign_ocr.sign_start()
-    sign_ocr.review_start(12)
+    sign_ocr.sign_start()
+    # sign_ocr.review_start(12)
 
