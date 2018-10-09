@@ -4,6 +4,7 @@ import sys
 import os
 import time
 import common as common
+import platform
 
 # ['EVENT_FLAG_ALTKEY', 'EVENT_FLAG_CTRLKEY', 'EVENT_FLAG_LBUTTON', 'EVENT_FLAG_MBUTTON', 'EVENT_FLAG_RBUTTON',
 # 'EVENT_FLAG_SHIFTKEY', 'EVENT_LBUTTONDBLCLK', 'EVENT_LBUTTONDOWN', 'EVENT_LBUTTONUP', 'EVENT_MBUTTONDBLCLK',
@@ -29,6 +30,7 @@ class SignOcr:
         self.img_files = common.get_files(image_dir)
         print('total imgs len: ', len(self.img_files))
         self.image_dir = image_dir
+        self.plate_encode = "utf8"
         # self.car_points = []
         # self.label_normal_file = './label_normal.txt'
         # self.label_green_file = './label_green.txt'
@@ -40,6 +42,18 @@ class SignOcr:
         self.index_file = os.path.join('.', 'index.txt')
 
         return
+
+    def use_platform(self):
+        sysstr = platform.system()
+        if (sysstr == "Windows"):
+            self.plate_encode = "gb2312"
+            print ("windows")
+        elif (sysstr == "Linux"):
+            self.plate_encode = "utf8"
+            print ("linux")
+        else:
+            print ("Other System ")
+
 
     # def mouse_click_events(self, event, x, y, flags, param):
     #     if event == cv2.EVENT_LBUTTONDOWN:
@@ -114,7 +128,8 @@ class SignOcr:
         while start_i < len(self.img_files):
             print('[total] %d; [index] %d; [name] %s' % (len(self.img_files), start_i, self.img_files[start_i]))
             plate = self.img_files[start_i].split(os.sep)[-1].split('_')[1].split('.')[0]
-            plate = plate.decode('utf8')
+            # plate = plate.decode('utf8')
+            plate = plate.decode(self.plate_encode)
             print('[plate] %s' % plate)
 
             # print(self.img_files[start_i])
@@ -147,7 +162,8 @@ class SignOcr:
 
                 if k == ord('c'):
                     plate = raw_input('input new plate: ')
-                    plate = plate.decode('utf8')
+                    # plate = plate.decode('utf8')
+                    plate = plate.decode(self.plate_encode)
                     self.save_label(self.img_files[start_i], plate)
 
                     start_i += 1
@@ -179,6 +195,7 @@ if __name__ == '__main__':
     image_dir = "../Data/car_recognition/train/province_4"
 
     sign_ocr = SignOcr(image_dir)
+    sign_ocr.use_platform()
 
     sign_ocr.sign_start()
     # sign_ocr.review_start(12)
