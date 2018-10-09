@@ -70,15 +70,15 @@ class SignOcr:
             for j in range(num):
                 img = cv2.imread(label_list[i*num+j][0])
                 img = cv2.resize(img, (img.shape[1]*times, img.shape[0]*times))
-                print(label_list[i * num + j][1])
-                print(type(label_list[i * num + j][1]))
-                print('111', label_list[i * num + j][1])
-                print(type(label_list[i * num + j][1].decode('utf-8')))
-                print('111', label_list[i * num + j][1].decode('utf-8'))
-                print(type(label_list[i * num + j][1].decode('utf-8').encode('gbk')))
-                print('111', label_list[i * num + j][1].decode('utf-8').encode('gbk'))
 
-                cv2.imshow(label_list[i*num+j][1], img)
+                # plate_name = label_list[i * num + j][1]                                     # utf8
+                plate_name = label_list[i * num + j][1].decode('utf8')                      # unicode
+                # plate_name = label_list[i * num + j][1].decode('utf8').encode('gbk')        # gbk
+
+                print(plate_name)
+                print(type(plate_name))
+                print('111', plate_name)
+                cv2.imshow(plate_name, img)
                 # cv2.imshow(label_list[i * num + j][1].decode('utf-8'), img)
                 # cv2.moveWindow(label_list[i*num+j][1].decode('gbk'), 400 * (j / 4) + 100, 200 * (j % 4) + 50)
             cv2.waitKey(0)
@@ -99,10 +99,7 @@ class SignOcr:
             common.write_data(self.label_error_file, data, 'a+')
 
     def sign_start(self, restart=False):
-        times = 4
-
-        # cv2.namedWindow('sign_image')
-        # cv2.setMouseCallback('sign_image', self.mouse_click_events)    # 鼠标事件绑定
+        times = 4               # 图片放大倍数
 
         if restart is False:
             try:
@@ -114,7 +111,6 @@ class SignOcr:
         else:
             start_i = 0
 
-        # for img_file in self.img_files:
         while start_i < len(self.img_files):
             print('[total] %d; [index] %d; [name] %s' % (len(self.img_files), start_i, self.img_files[start_i]))
             plate = self.img_files[start_i].split(os.sep)[-1].split('_')[1].split('.')[0]
@@ -134,14 +130,6 @@ class SignOcr:
                 k = cv2.waitKey(1) & 0xFF
                 if k == ord('s'):
                     self.save_label(self.img_files[start_i], plate)
-                    # data = self.img_files[start_i] + ":" + plate + '\n'
-                    #
-                    # if len(plate) == 7:     # 正常车牌
-                    #     common.write_data(self.label_normal_file, data, 'a+')
-                    # elif len(plate) == 8:   # 新能源车牌
-                    #     common.write_data(self.label_green_file, data, 'a+')
-                    # else:                   # 其他车牌
-                    #     common.write_data(self.label_error_file, data, 'a+')
 
                     start_i += 1
                     common.write_data(self.index_file, str(start_i), 'w')
@@ -161,36 +149,10 @@ class SignOcr:
                     plate = raw_input('input new plate: ')
                     plate = plate.decode('utf8')
                     self.save_label(self.img_files[start_i], plate)
-                    # if len(plate) == 7:     # 正常车牌
-                    #     common.write_data(self.label_normal_file, data, 'a+')
-                    # elif len(plate) == 8:   # 新能源车牌
-                    #     common.write_data(self.label_green_file, data, 'a+')
-                    # else:                   # 其他车牌
-                    #     common.write_data(self.label_error_file, data, 'a+')
 
                     start_i += 1
                     common.write_data(self.index_file, str(start_i), 'w')
                     break
-
-                # 重新加载图片
-                # if k == ord('r'):
-                #     print('re sign ...')
-                #     self.img = cv2.imread(self.img_files[start_i])
-                #     self.img = cv2.resize(self.img, (self.img.shape[1]*times, self.img.shape[0]*times))
-                #     cv2.imshow('sign_image', self.img)
-                #     self.car_points = []
-
-                # 改变图片大小
-                # if k == ord('c'):
-                #     print('change size ...')
-                #     if times == 2:
-                #         times = 4
-                #     else:
-                #         times = 2
-                #     self.img = cv2.imread(self.img_files[start_i])
-                #     self.img = cv2.resize(self.img, (self.img.shape[1]*times, self.img.shape[0]*times))
-                #     cv2.imshow('sign_image', self.img)
-                #     self.car_points = []
 
 
 if __name__ == '__main__':
@@ -218,6 +180,6 @@ if __name__ == '__main__':
 
     sign_ocr = SignOcr(image_dir)
 
-    sign_ocr.sign_start()
-    # sign_ocr.review_start(12)
+    # sign_ocr.sign_start()
+    sign_ocr.review_start(12)
 
