@@ -27,6 +27,7 @@ class SignOcr:
     def __init__(self, image_dir):
         self.img = None
         self.img_files = common.get_files(image_dir)
+        print('total imgs len: ', len(self.img_files))
         self.image_dir = image_dir
         # self.car_points = []
         # self.label_normal_file = './label_normal.txt'
@@ -74,10 +75,11 @@ class SignOcr:
                 print('111', label_list[i * num + j][1])
                 print(type(label_list[i * num + j][1].decode('utf-8')))
                 print('111', label_list[i * num + j][1].decode('utf-8'))
-                print(type(label_list[i * num + j][1].decode('utf-8').encode('gb2312')))
-                print('111', label_list[i * num + j][1].decode('utf-8').encode('gb2312'))
+                print(type(label_list[i * num + j][1].decode('utf-8').encode('gbk')))
+                print('111', label_list[i * num + j][1].decode('utf-8').encode('gbk'))
 
-                cv2.imshow(label_list[i*num+j][1].decode('utf-8').encode('gbk'), img)
+                cv2.imshow(label_list[i*num+j][1], img)
+                # cv2.imshow(label_list[i * num + j][1].decode('utf-8'), img)
                 # cv2.moveWindow(label_list[i*num+j][1].decode('gbk'), 400 * (j / 4) + 100, 200 * (j % 4) + 50)
             cv2.waitKey(0)
             # cv2.destroyWindow('image')
@@ -214,8 +216,6 @@ if __name__ == '__main__':
     # image_dir = "../Data/car_recognition/train/province_3"
     image_dir = "../Data/car_recognition/train/province_4"
 
-    # label_file = "./label.txt"
-    # index_file = "./index.txt"
     sign_ocr = SignOcr(image_dir)
 
     sign_ocr.sign_start()
