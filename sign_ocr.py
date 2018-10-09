@@ -87,7 +87,7 @@ class SignOcr:
     def save_label(self, file_name, plate):
         print('save_label ...')
         data = file_name + ":" + plate + '\n'
-        print('[plate] %d' % len(plate))
+        print('[save_label] plate len: %d' % len(plate))
 
         if len(plate) == 7:  # 正常车牌
             common.write_data(self.label_normal_file, data, 'a+')
