@@ -6,20 +6,6 @@ import time
 import common as common
 import platform
 
-# ['EVENT_FLAG_ALTKEY', 'EVENT_FLAG_CTRLKEY', 'EVENT_FLAG_LBUTTON', 'EVENT_FLAG_MBUTTON', 'EVENT_FLAG_RBUTTON',
-# 'EVENT_FLAG_SHIFTKEY', 'EVENT_LBUTTONDBLCLK', 'EVENT_LBUTTONDOWN', 'EVENT_LBUTTONUP', 'EVENT_MBUTTONDBLCLK',
-# 'EVENT_MBUTTONDOWN', 'EVENT_MBUTTONUP', 'EVENT_MOUSEHWHEEL', 'EVENT_MOUSEMOVE', 'EVENT_MOUSEWHEEL',
-# 'EVENT_RBUTTONDBLCLK', 'EVENT_RBUTTONDOWN', 'EVENT_RBUTTONUP']
-
-# events = [i for i in dir(cv2) if 'EVENT' in i]
-# img = np.zeros((512, 512, 3), np.uint8)
-
-
-# mouse callback function
-# def mouse_click_events(event, x, y, flags, param):
-#     if event == cv2.EVENT_LBUTTONDBLCLK:
-#         cv2.circle(img, (x, y), 100, (255, 0, 0), -1)
-
 reload(sys)                      # reload 才能调用 setdefaultencoding 方法
 sys.setdefaultencoding('utf-8')  # 设置 'utf-8'
 
@@ -31,11 +17,6 @@ class SignOcr:
         print('total imgs len: ', len(self.img_files))
         self.image_dir = image_dir
         self.plate_encode = "utf8"
-        # self.car_points = []
-        # self.label_normal_file = './label_normal.txt'
-        # self.label_green_file = './label_green.txt'
-        # self.label_error_file = './label_error.txt'
-        # self.index_file = './index.txt'
         self.label_normal_file = os.path.join('.', 'label_normal.txt')
         self.label_green_file = os.path.join('.', 'label_green.txt')
         self.label_error_file = os.path.join('.', 'label_error.txt')
@@ -45,24 +26,15 @@ class SignOcr:
 
     def use_platform(self):
         sysstr = platform.system()
-        if (sysstr == "Windows"):
+        if sysstr == "Windows":
             self.plate_encode = "gb2312"
-            print ("windows")
-        elif (sysstr == "Linux"):
+            print ("current system: windows")
+        elif sysstr == "Linux":
             self.plate_encode = "utf8"
-            print ("linux")
+            print ("current system: linux")
         else:
             print ("Other System ")
 
-
-    # def mouse_click_events(self, event, x, y, flags, param):
-    #     if event == cv2.EVENT_LBUTTONDOWN:
-    #         if len(self.car_points) < 4:
-    #             cv2.circle(self.img, (x, y), 3, (0, 0, 255), -1)
-    #             print('click: [%d, %d]' % (x, y))
-    #             self.car_points.append((x, y))
-    #         else:
-    #             print('self.car_points is too long, %s' % str(self.car_points))
     def review_start(self, num=12):
         print('[review_start] ...')
         times = 2
@@ -85,9 +57,9 @@ class SignOcr:
                 img = cv2.imread(label_list[i*num+j][0])
                 img = cv2.resize(img, (img.shape[1]*times, img.shape[0]*times))
 
-                # plate_name = label_list[i * num + j][1]                                     # utf8
-                plate_name = label_list[i * num + j][1].decode('utf8')                      # unicode
-                # plate_name = label_list[i * num + j][1].decode('utf8').encode('gbk')        # gbk
+                # plate_name = label_list[i * num + j][1]                                           # utf8
+                plate_name = label_list[i * num + j][1].decode(self.plate_encode)                   # unicode
+                # plate_name = label_list[i * num + j][1].decode(self.plate_encode).encode('gbk')   # gbk
 
                 print(plate_name)
                 print(type(plate_name))
