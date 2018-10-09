@@ -74,7 +74,7 @@ class SignOcr:
 
     def save_label(self, file_name, plate):
         print('save_label ...')
-        data = file_name + ":" + plate + '\n'
+        data = file_name + ":" + plate.encode(self.plate_encode) + '\n'
         print('[save_label] plate len: %d' % len(plate))
 
         if len(plate) == 7:  # 正常车牌
