@@ -22,16 +22,22 @@ import common as common
 reload(sys)                      # reload 才能调用 setdefaultencoding 方法
 sys.setdefaultencoding('utf-8')  # 设置 'utf-8'
 
+
 class SignOcr:
     def __init__(self, image_dir):
         self.img = None
         self.img_files = common.get_files(image_dir)
         self.image_dir = image_dir
         # self.car_points = []
-        self.label_normal_file = './label_normal.txt'
-        self.label_green_file = './label_green.txt'
-        self.label_error_file = './label_error.txt'
-        self.index_file = './index.txt'
+        # self.label_normal_file = './label_normal.txt'
+        # self.label_green_file = './label_green.txt'
+        # self.label_error_file = './label_error.txt'
+        # self.index_file = './index.txt'
+        self.label_normal_file = os.path.join('.', 'label_normal.txt')
+        self.label_green_file = os.path.join('.', 'label_green.txt')
+        self.label_error_file = os.path.join('.', 'label_error.txt')
+        self.index_file = os.path.join('.', 'index.txt')
+
         return
 
     # def mouse_click_events(self, event, x, y, flags, param):
@@ -42,6 +48,41 @@ class SignOcr:
     #             self.car_points.append((x, y))
     #         else:
     #             print('self.car_points is too long, %s' % str(self.car_points))
+    def review_start(self, num=12):
+        print('[review_start] ...')
+        times = 2
+        label_list = []
+
+        with open(self.label_normal_file, 'r') as f:
+            for line in f.readlines():
+                lines = line.replace("\n", "").split(":")
+                label_list.append([lines[0], lines[1]])
+
+        with open(self.label_green_file, 'r') as f:
+            for line in f.readlines():
+                lines = line.replace("\n", "").split(":")
+                label_list.append([lines[0], lines[1]])
+
+        # print(len(label_list))
+        # print((len(label_list)+num-1) / num)
+        for i in range((len(label_list)+num-1) / num):
+            for j in range(num):
+                img = cv2.imread(label_list[i*num+j][0])
+                img = cv2.resize(img, (img.shape[1]*times, img.shape[0]*times))
+                print(label_list[i * num + j][1])
+                print(type(label_list[i * num + j][1]))
+                print('111', label_list[i * num + j][1])
+                print(type(label_list[i * num + j][1].decode('utf-8')))
+                print('111', label_list[i * num + j][1].decode('utf-8'))
+                print(type(label_list[i * num + j][1].decode('utf-8').encode('gb2312')))
+                print('111', label_list[i * num + j][1].decode('utf-8').encode('gb2312'))
+
+                cv2.imshow(label_list[i*num+j][1].decode('utf-8').encode('gbk'), img)
+                # cv2.moveWindow(label_list[i*num+j][1].decode('gbk'), 400 * (j / 4) + 100, 200 * (j % 4) + 50)
+            cv2.waitKey(0)
+            # cv2.destroyWindow('image')
+            # str = raw_input('wait ...')
+        return
 
     def save_label(self, file_name, plate):
         print('save_label ...')
@@ -74,10 +115,12 @@ class SignOcr:
         # for img_file in self.img_files:
         while start_i < len(self.img_files):
             print('[total] %d; [index] %d; [name] %s' % (len(self.img_files), start_i, self.img_files[start_i]))
-            plate = self.img_files[start_i].split('/')[-1].split('_')[1].split('.')[0]
+            plate = self.img_files[start_i].split(os.sep)[-1].split('_')[1].split('.')[0]
             plate = plate.decode('utf8')
             print('[plate] %s' % plate)
 
+            # print(self.img_files[start_i])
+            # print(type(self.img_files[start_i]))
             self.img = cv2.imread(self.img_files[start_i])
             self.img = cv2.resize(self.img, (self.img.shape[1]*times, self.img.shape[0]*times))
             cv2.imshow('sign_image', self.img)
@@ -167,10 +210,14 @@ if __name__ == '__main__':
     # image_dir = "../Data/car_recognition/train/green_2"
     # image_dir = "../Data/car_recognition/train/blue_failed_2"
     # image_dir = "../Data/car_recognition/train/province_1"
-    image_dir = "../Data/car_recognition/train/province_2"
+    # image_dir = "../Data/car_recognition/train/province_2"
+    # image_dir = "../Data/car_recognition/train/province_3"
+    image_dir = "../Data/car_recognition/train/province_4"
 
     # label_file = "./label.txt"
     # index_file = "./index.txt"
     sign_ocr = SignOcr(image_dir)
 
     sign_ocr.sign_start()
+    # sign_ocr.review_start(12)
+
