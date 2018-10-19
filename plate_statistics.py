@@ -28,6 +28,9 @@ def statistics(label_path):
     for line in lines:
         plate = line.replace('\r', '').replace('\n', '').split(':')[-1].decode('utf-8')
 
+        # if list(plate)[1] == '0':
+        #     print(line)
+
         for i, char in enumerate(list(plate)):
             if i >= len(str_lists):
                 str_lists.append([])
