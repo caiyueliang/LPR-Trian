@@ -35,9 +35,11 @@ def statistics(label_path):
             str_lists[i].append(char)
 
     for str_list in str_lists:
+        total_count = len(str_list)
         for char in CHARS:
-            if str_list.count(char.decode('utf-8')) != 0:
-                print char.decode('utf-8') + ':' + str(str_list.count(char.decode('utf-8'))),
+            char_count = str_list.count(char.decode('utf-8'))
+            if char_count != 0:
+                print '%s: %4d, %.6f  ' % (char.decode('utf-8'), char_count, float(char_count)/total_count),
         print('\n')
     return
 
