@@ -171,7 +171,6 @@ class TextImageGenerator:
         self._label_file = label_file
         self._batch_size = batch_size
         self._num_channels = num_channels
-        # self._label_len = label_len
         self._input_len = input_length
         self._img_w, self._img_h = img_size
 
@@ -194,15 +193,15 @@ class TextImageGenerator:
                 self.labels.append(label)
                 self._num_examples += 1
         # print(self.labels)
-        self.labels = np.float32(self.labels)
+        # self.labels = np.float32(self.labels)
 
     def next_batch(self):
         # Shuffle the data
-        if self._next_index == 0:
-            perm = np.arange(self._num_examples)
-            np.random.shuffle(perm)
-            self._filenames = [self.filenames[i] for i in perm]
-            self._labels = self.labels[perm]
+        # if self._next_index == 0:
+        #     perm = np.arange(self._num_examples)
+        #     np.random.shuffle(perm)
+        #     self._filenames = [self.filenames[i] for i in perm]
+        #     self._labels = self.labels[perm]
 
         batch_size = self._batch_size
         start = self._next_index
@@ -217,7 +216,7 @@ class TextImageGenerator:
         images = np.zeros([batch_size, self._img_h, self._img_w, self._num_channels])
         # labels = np.zeros([batch_size, self._label_len])
         for j, i in enumerate(range(start, end)):
-            fname = self._filenames[i]
+            fname = self.filenames[i]
             file_name = os.path.join(self._img_dir, fname)
             # file_name = file_name.decode('utf8')
             img = cv2.imread(file_name)
@@ -239,16 +238,18 @@ class TextImageGenerator:
 
             images[j, ...] = img
         images = np.transpose(images, axes=[0, 2, 1, 3])
-        labels = self._labels[start:end, ...]
+        # labels = self._labels[start:end, ...]
+        # print(self.labels)
+        labels = np.array([self.labels[start]])
         input_length = np.zeros([batch_size, 1])
-        label_length = np.zeros([batch_size, 1])
+        # label_length = np.zeros([batch_size, 1])
         input_length[:] = self._input_len
-        label_length[:] = self._label_len
+        # label_length[:] = self._label_len
         outputs = {'ctc': np.zeros([batch_size])}
         inputs = {'the_input': images,
                   'the_labels': labels,
                   'input_length': input_length,
-                  'label_length': label_length,
+                  'label_length': np.array([[float(len(self.labels[start]))]]),
                   }
 
         # print(outputs)
@@ -297,6 +298,7 @@ def train(args):
 
     input_tensor, y_pred = model_seq_rec()
 
+    # labels = Input(name='the_labels', shape=[label_len], dtype='float32')
     labels = Input(name='the_labels', shape=[None], dtype='float32')
     input_length = Input(name='input_length', shape=[1], dtype='int32')
     label_length = Input(name='label_length', shape=[1], dtype='int32')
