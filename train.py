@@ -2,6 +2,7 @@
 import os
 import argparse
 
+import random
 import cv2
 import numpy as np
 from math import isnan
@@ -11,6 +12,7 @@ from keras.layers import Input, Activation, Conv2D, BatchNormalization, Lambda, 
 from keras.models import Model
 from keras.optimizers import SGD
 from keras.callbacks import ModelCheckpoint, TensorBoard
+
 
 CHARS = ['京', '沪', '津', '渝', '冀', '晋', '蒙', '辽', '吉', '黑',
          '苏', '浙', '皖', '闽', '赣', '鲁', '豫', '鄂', '湘', '粤',
@@ -52,8 +54,8 @@ def ctc_lambda_func(args):
     # print('labels shape : %s' % labels.shape)
     # print('input_length shape : %s' % input_length.shape)
     # print('input_length : %s' % input_length)
-    print('label_length shape : %s' % label_length.shape)
-    print('label_length : %s' % label_length)
+    # print('label_length shape : %s' % label_length.shape)
+    # print('label_length : %s' % label_length)
 
     # loss = K.ctc_batch_cost(labels, y_pred, input_length, label_length)
     # print('loss shape : %s' % loss.shape)
@@ -163,17 +165,8 @@ def parse_line(line):
     return filename, label
 
 
-# def label_standard(label):
-#     label_len = len(label)
-#
-#     new_label = label.copy()
-#     if label_len == 7:
-#         new_label = np.append(label, 83.)
-#     return label_len, new_label
-
-
 class TextImageGenerator:
-    def __init__(self, img_dir, label_file, batch_size, img_size, input_length, num_channels=3, label_len=5):
+    def __init__(self, img_dir, label_file, batch_size, img_size, input_length, num_channels=3, train=False):
         self._img_dir = img_dir
         self._label_file = label_file
         self._batch_size = batch_size
@@ -185,87 +178,48 @@ class TextImageGenerator:
         self._num_examples = 0
         self._next_index = 0
         self._num_epoches = 0
-
-        self.label_flag = 0
-
-        self._filenames = None
-        self._labels = None
-        self._label_len = 0
-
-        self.filenames_1 = None
-        self.labels_1 = None
-
-        self.filenames_2 = None
-        self.labels_2 = None
+        self.filenames = []
+        self.labels = None
+        self.train = train
 
         self.error_file = {}
-
         self.init()
 
     def init(self):
-        self.filenames_1 = []
-        self.labels_1 = []
-
-        self.filenames_2 = []
-        self.labels_2 = []
-
+        self.labels = []
         with open(self._label_file) as f:
             for line in f:
                 filename, label = parse_line(line)
-                if len(label) == 7:
-                    self.filenames_1.append(filename)
-                    self.labels_1.append(label)
-                elif len(label) == 8:
-                    self.filenames_2.append(filename)
-                    self.labels_2.append(label)
-
+                self.filenames.append(filename)
+                self.labels.append(label)
                 self._num_examples += 1
-
-        self.labels_1 = np.float32(self.labels_1)
-        self.labels_2 = np.float32(self.labels_2)
-
-        print('[init] labels_1 len: %d, label_2 len: %d, total len: %d' % (len(self.labels_1), len(self.labels_2), self._num_examples))
-        assert len(self.labels_1) + len(self.labels_2) == self._num_examples
+        # print(self.labels)
+        self.labels = np.float32(self.labels)
 
     def next_batch(self):
         # Shuffle the data
         if self._next_index == 0:
-            if self.label_flag == 0:
-                perm = np.arange(len(self.labels_1))
-                np.random.shuffle(perm)
-                self._filenames = [self.filenames_1[i] for i in perm]
-                self._labels = [self.labels_1[i] for i in perm]
-                self._label_len = 7
-                self.label_flag = 1
-            else:
-                perm = np.arange(len(self.labels_2))
-                np.random.shuffle(perm)
-                self._filenames = [self.filenames_2[i] for i in perm]
-                self._labels = [self.labels_2[i] for i in perm]
-                self._label_len = 8
-                self.label_flag = 0
-                self._num_epoches += 1
-
-            print(self._label_len)
-            print(self._labels)
+            perm = np.arange(self._num_examples)
+            np.random.shuffle(perm)
+            self._filenames = [self.filenames[i] for i in perm]
+            self._labels = self.labels[perm]
 
         batch_size = self._batch_size
         start = self._next_index
         end = self._next_index + batch_size
-        if end >= len(self._labels):
+        if end >= self._num_examples:
             self._next_index = 0
-            # self._num_epoches += 1
-            end = len(self._labels)
-            batch_size = len(self._labels) - start
+            self._num_epoches += 1
+            end = self._num_examples
+            batch_size = self._num_examples - start
         else:
             self._next_index = end
-
         images = np.zeros([batch_size, self._img_h, self._img_w, self._num_channels])
         # labels = np.zeros([batch_size, self._label_len])
         for j, i in enumerate(range(start, end)):
-            print(j, i)
             fname = self._filenames[i]
             file_name = os.path.join(self._img_dir, fname)
+            # file_name = file_name.decode('utf8')
             img = cv2.imread(file_name)
 
             if img is None:
@@ -276,19 +230,20 @@ class TextImageGenerator:
                 print(len(self.error_file))
                 print(self.error_file)
 
+            if self.train is True:
+                # cv2.imshow('old', img)
+                img = self.random_gaussian(img, 7)              # 随机高斯模糊
+                img = self.random_crop(img, 5)                  # 随机裁剪
+                # cv2.imshow('new', img)
+                # cv2.waitKey(0)
+
             images[j, ...] = img
-
         images = np.transpose(images, axes=[0, 2, 1, 3])
-        # self._labels[start:end, ...]
-        # labels = np.array(self._labels[start:end, ...])
-        labels = np.array(self._labels[start:end])
-        # print('[next_batch] labels: ', labels)
-
+        labels = self._labels[start:end, ...]
         input_length = np.zeros([batch_size, 1])
         label_length = np.zeros([batch_size, 1])
         input_length[:] = self._input_len
         label_length[:] = self._label_len
-
         outputs = {'ctc': np.zeros([batch_size])}
         inputs = {'the_input': images,
                   'the_labels': labels,
@@ -296,9 +251,34 @@ class TextImageGenerator:
                   'label_length': label_length,
                   }
 
-        print(outputs)
-        print(inputs)
+        # print(outputs)
+        # print(inputs)
         return inputs, outputs
+
+    # 随机高斯模糊
+    def random_gaussian(self, img, max_n=7):
+        k = random.randrange(1, max_n, 2)
+        # print(k)
+        if k != 1:
+            img = cv2.GaussianBlur(img, ksize=(k, k), sigmaX=1.5)
+        return img
+
+    # 随机裁剪
+    def random_crop(self, img, max_n=5):
+        imh, imw, _ = img.shape
+
+        top = random.randint(0, max_n)
+        bottom = random.randint(0, max_n)
+        left = random.randint(0, max_n)
+        right = random.randint(0, max_n)
+        # print top, bottom, left, right
+
+        img = img[top:imh-bottom, left:imw-right, :]
+        # print(img.shape)
+        img = cv2.resize(img, (imw, imh))
+        # print(img.shape)
+
+        return img
 
     def get_data(self):
         while True:
@@ -314,12 +294,10 @@ def train(args):
 
     if args.log != '' and not os.path.isdir(args.log):
         os.makedirs(args.log)
-    label_len = args.label_len
 
-    # input_tensor, y_pred = build_model(args.img_size[0], args.num_channels)
     input_tensor, y_pred = model_seq_rec()
 
-    labels = Input(name='the_labels', shape=[label_len], dtype='float32')
+    labels = Input(name='the_labels', shape=[None], dtype='float32')
     input_length = Input(name='input_length', shape=[1], dtype='int32')
     label_length = Input(name='label_length', shape=[1], dtype='int32')
 
@@ -330,7 +308,7 @@ def train(args):
     loss_out = Lambda(ctc_lambda_func, output_shape=(1,), name='ctc')([y_pred, labels, input_length, label_length])
 
     # clipnorm seems to speeds up convergence
-    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.0, nesterov=True, clipnorm=5)
+    sgd = SGD(lr=args.lr, decay=1e-4, momentum=0.9, nesterov=True, clipnorm=5)
 
     model = Model(inputs=[input_tensor, labels, input_length, label_length], outputs=loss_out)
 
@@ -345,18 +323,18 @@ def train(args):
     print("args.tl: %s" % args.tl)
     print("args.vi: %s" % args.vi)
     print("args.vl: %s" % args.vl)
+    print("args.lr: %lf" % args.lr)
     print("batch_size: %s" % args.b)
     print("img_size: %s" % args.img_size)
     print("input_length: %s" % pred_length)
     print("num_channels: %s" % args.num_channels)
-    print("label_len: %s" % label_len)
     train_gen = TextImageGenerator(img_dir=args.ti,
                                    label_file=args.tl,
                                    batch_size=args.b,
                                    img_size=args.img_size,
                                    input_length=pred_length,
                                    num_channels=args.num_channels,
-                                   label_len=label_len)
+                                   train=True)
 
     val_gen = TextImageGenerator(img_dir=args.vi,
                                  label_file=args.vl,
@@ -364,7 +342,7 @@ def train(args):
                                  img_size=args.img_size,
                                  input_length=pred_length,
                                  num_channels=args.num_channels,
-                                 label_len=label_len)
+                                 train=False)
 
     checkpoints_cb = ModelCheckpoint(args.c, period=1, save_best_only=True)
     cbs = [checkpoints_cb]
@@ -543,7 +521,8 @@ def main():
     parser_train.add_argument('-pre', help='pre trained weight file', default='')
     parser_train.add_argument('-start-epoch', type=int, default=0)
     parser_train.add_argument('-n', type=int, help='number of epochs', required=True)
-    parser_train.add_argument('-label-len', type=int, help='标签长度', default=7)
+    parser_train.add_argument('-lr', type=float, help='learning rate', required=True)
+    # parser_train.add_argument('-label-len', type=int, help='标签长度', default=7)
     parser_train.add_argument('-c', help='checkpoints format string', required=True)
     parser_train.add_argument('-log', help='tensorboard 日志目录, 默认为空', default='')
     parser_train.set_defaults(func=train)
