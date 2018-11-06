@@ -212,10 +212,8 @@ class TextImageGenerator:
                     files_path_l.append(filename)
                     labels_l.append(label)
 
-        # print(files_path_s)
-        print(labels_s)
-        # print(files_path_l)
-        print(labels_l)
+        # print(labels_s)
+        # print(labels_l)
         print(len(labels_s), len(labels_l), len(labels_s) + len(labels_l))
 
         s_batch = ((len(labels_s) + self._batch_size - 1) / self._batch_size)
@@ -256,11 +254,10 @@ class TextImageGenerator:
                 self.filenames.append(files_path_l[i])
 
         self._num_examples = len(self.labels)
-        # print(len(self.filenames))
+
+        # print(self.labels)
         print(self._num_examples)
-        print(self.labels)
-        print([len(label) for label in self.labels])
-        # print(self.filenames)
+        # print([len(label) for label in self.labels])
 
     # def init(self):
     #     self.labels = []
