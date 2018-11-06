@@ -177,23 +177,102 @@ class TextImageGenerator:
         self._num_examples = 0
         self._next_index = 0
         self._num_epoches = 0
-        self.filenames = []
-        self.labels = None
+        self.filenames = list()
+        self.labels = list()
         self.train = train
 
         self.error_file = {}
         self.init()
 
+    # def label_sort(self, files_path, labels, batch_size):
+    #     print(files_path)
+    #     print(labels)
+    #     files_path_l = list()
+    #     files_path_s = list()
+    #     labels_l = list()
+    #     labels_s = list()
+    #
+    #     for label
+    #     return
+
     def init(self):
-        self.labels = []
+        # self.labels = []
+        files_path_l = list()
+        files_path_s = list()
+        labels_l = list()
+        labels_s = list()
+
         with open(self._label_file) as f:
             for line in f:
                 filename, label = parse_line(line)
-                self.filenames.append(filename)
-                self.labels.append(label)
-                self._num_examples += 1
-        # print(self.labels)
-        # self.labels = np.float32(self.labels)
+                if len(label) == 7:
+                    files_path_s.append(filename)
+                    labels_s.append(label)
+                elif len(label) == 8:
+                    files_path_l.append(filename)
+                    labels_l.append(label)
+
+        # print(files_path_s)
+        print(labels_s)
+        # print(files_path_l)
+        print(labels_l)
+        print(len(labels_s), len(labels_l), len(labels_s) + len(labels_l))
+
+        s_batch = ((len(labels_s) + self._batch_size - 1) / self._batch_size)
+        l_batch = ((len(labels_l) + self._batch_size - 1) / self._batch_size)
+        min_batch = min(s_batch, l_batch)
+        print(s_batch, l_batch, min_batch)
+
+        for index in range(min_batch):
+            if len(labels_s) % self._batch_size == 0:
+                if index < s_batch:
+                    for i in range(index*self._batch_size, (index+1)*self._batch_size):
+                        self.labels.append(labels_s[i])
+                        self.filenames.append(files_path_s[i])
+            else:
+                if index < s_batch - 1:
+                    for i in range(index*self._batch_size, (index+1)*self._batch_size):
+                        self.labels.append(labels_s[i])
+                        self.filenames.append(files_path_s[i])
+
+            if len(labels_l) % self._batch_size == 0:
+                if index < l_batch:
+                    for i in range(index * self._batch_size, (index + 1) * self._batch_size):
+                        self.labels.append(labels_l[i])
+                        self.filenames.append(files_path_l[i])
+            else:
+                if index < l_batch - 1:
+                    for i in range(index * self._batch_size, (index + 1) * self._batch_size):
+                        self.labels.append(labels_l[i])
+                        self.filenames.append(files_path_l[i])
+
+        if s_batch > l_batch:
+            for i in range(min_batch*self._batch_size, len(labels_s)):
+                self.labels.append(labels_s[i])
+                self.filenames.append(files_path_s[i])
+        elif s_batch < l_batch:
+            for i in range(min_batch*self._batch_size, len(labels_l)):
+                self.labels.append(labels_l[i])
+                self.filenames.append(files_path_l[i])
+
+        self._num_examples = len(self.labels)
+        # print(len(self.filenames))
+        print(self._num_examples)
+        print(self.labels)
+        print([len(label) for label in self.labels])
+        # print(self.filenames)
+
+    # def init(self):
+    #     self.labels = []
+    #     with open(self._label_file) as f:
+    #         for line in f:
+    #             filename, label = parse_line(line)
+    #             self.filenames.append(filename)
+    #             self.labels.append(label)
+    #             self._num_examples += 1
+    #     # print(self.labels)
+    #     # self.labels = np.float32(self.labels)
+    #     self.label_sort(self.filenames, self.labels, self._batch_size)
 
     def next_batch(self):
         # Shuffle the data

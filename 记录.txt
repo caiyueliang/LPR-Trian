@@ -42,9 +42,20 @@
 'label_length': array([[7.],[7.],[7.],[7.]]), 
 'input_length': array([[18.],[18.],[18.], [18.]])}
 	   
- python train.py train -ti ../Data/car_recognition/train -tl ../Data/car_recognition/train/labels_normal.txt -vi ../Data/car_recognition/test -vl ../Data/car_recognition/test/labels_normal.txt -b 1 -img-size 164 48 -n 5 -lr 0.001 -c checkpoints/weights_blue.h5 -pre checkpoints/weights_green.h5 -log log
+ python train.py train -ti ../Data/car_recognition/train -tl ../Data/car_recognition/train/labels_normal.txt -vi ../Data/car_recognition/test -vl ../Data/car_recognition/test/labels_normal.txt -b 2 -img-size 164 48 -n 1 -lr 0.001 -c checkpoints/weights_blue.h5 -pre checkpoints/weights_green.h5 -log log
  
  
  
- 
+========================================================================================================================
+['blue_1/481401_\xe9\x97\xbdDV733Q_0.png', 'blue_1/481563_\xe9\x97\xbdDV733Q_0.png', 'blue_1/482743_\xe9\x97\xbdDY323Q_0.png', 'blue_1/484548_\xe9\x97\xbdDY323Q_0.png', 'province_4/9247538_\xe5\xb7\x9dAD52013_0.jpg', 'province_4/9276921_\xe7\x90\xbcBD06886_0.jpg', 'province_4/7978441_\xe8\xb4\xb5GD07572_0.jpg', 'province_4/9452885_\xe6\xa1\x82AD05533_0.jpg', 'province_4/8700964_\xe8\xb4\xb5GD07572_0.jpg']
+
+[array([ 13.,  44.,  60.,  38.,  34.,  34.,  55.]), array([ 13.,  44.,  60.,  38.,  34.,  34.,  55.]), array([ 13.,  44.,  63.,  34.,  33.,  34.,  55.]), array([ 13.,  44.,  63.,  34.,  33.,  34.,  55.]), array([ 22.,  41.,  44.,  36.,  33.,  31.,  32.,  34.]), array([ 21.,  42.,  44.,  31.,  37.,  39.,  39.,  37.]), array([ 23.,  47.,  44.,  31.,  38.,  36.,  38.,  33.]), array([ 20.,  41.,  44.,  31.,  36.,  36.,  34.,  34.]), array([ 23.,  47.,  44.,  31.,  38.,  36.,  38.,  33.])]
+
+['blue_1/496987_\xe9\x97\xbdDY323Q_0.png', 'blue_1/496996_\xe9\x97\xbdD6270P_0.png', 'blue_1/497287_\xe9\x97\xbdDZ168B_0.png', 'blue_1/498627_\xe9\x97\xbdDMF980_0.png', 'green_1/8361806_\xe7\xb2\xa4BD90237_0.jpg', 'green_1/8362293_\xe7\xb2\xa4BF74368_0.jpg', 'green_1/8367540_\xe7\xb2\xa4BDA4158_0.jpg', 'green_1/8367864_\xe7\xb2\xa4BDD8590_0.jpg', 'green_1/8368216_\xe7\xb2\xa4BD77262_0.jpg', 'green_1/8377166_\xe7\xb2\xa4BDB5935_0.jpg']
+
+[array([ 13.,  44.,  63.,  34.,  33.,  34.,  55.]), array([ 13.,  44.,  37.,  33.,  38.,  31.,  54.]), array([ 13.,  44.,  64.,  32.,  37.,  39.,  42.]), array([ 13.,  44.,  52.,  46.,  40.,  39.,  31.]), array([ 19.,  42.,  44.,  40.,  31.,  33.,  34.,  38.]), array([ 19.,  42.,  46.,  38.,  35.,  34.,  37.,  39.]), array([ 19.,  42.,  44.,  41.,  35.,  32.,  36.,  39.]), array([ 19.,  42.,  44.,  44.,  39.,  36.,  40.,  31.]), array([ 19.,  42.,  44.,  38.,  38.,  33.,  37.,  33.]), array([ 19.,  42.,  44.,  42.,  36.,  40.,  34.,  36.])]
+
+
+
+
  
