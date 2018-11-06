@@ -239,8 +239,9 @@ class TextImageGenerator:
             images[j, ...] = img
         images = np.transpose(images, axes=[0, 2, 1, 3])
         # labels = self._labels[start:end, ...]
-        # print(self.labels)
-        labels = np.array([self.labels[start]])
+        labels = np.array([label for label in self.labels[start:end]])
+        # labels = np.array([self.labels[start:end]])
+
         input_length = np.zeros([batch_size, 1])
         # label_length = np.zeros([batch_size, 1])
         input_length[:] = self._input_len
@@ -249,12 +250,21 @@ class TextImageGenerator:
         inputs = {'the_input': images,
                   'the_labels': labels,
                   'input_length': input_length,
-                  'label_length': np.array([[float(len(self.labels[start]))]]),
+                  # 'label_length': np.array([[float(len(self.labels[start]))]]),
+                  'label_length': np.array([[float(len(label))] for label in self.labels[start:end]]),
                   }
 
         # print(outputs)
         # print(inputs)
         return inputs, outputs
+
+    def get_labels(self, start, end):
+        labels = np.array([self.labels[start:end]])
+        labels_length = np.array()
+
+        print(labels)
+        print(labels_length)
+        return labels, labels_length
 
     # 随机高斯模糊
     def random_gaussian(self, img, max_n=7):
