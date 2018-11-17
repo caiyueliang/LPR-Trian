@@ -80,7 +80,7 @@ class SignOcr:
         if len(plate) == 7:  # 正常车牌
             common.write_data(self.label_normal_file, data, 'a+')
         elif len(plate) == 8:  # 新能源车牌
-            common.write_data(self.label_green_file, data, 'a+')
+            common.write_data(self.label_normal_file, data, 'a+')
         else:  # 其他车牌
             common.write_data(self.label_error_file, data, 'a+')
 
@@ -164,7 +164,8 @@ if __name__ == '__main__':
     # image_dir = "../Data/car_recognition/train/province_1"
     # image_dir = "../Data/car_recognition/train/province_2"
     # image_dir = "../Data/car_recognition/train/province_3"
-    image_dir = "../Data/car_recognition/train/province_4"
+    # image_dir = "../Data/car_recognition/train/province_4"
+    image_dir = "../Data/car_recognition/train/failed_5"
 
     sign_ocr = SignOcr(image_dir)
     sign_ocr.use_platform()
