@@ -167,8 +167,8 @@ class SignOcr:
                 if k == ord('c'):
                     plate = raw_input('input new plate: ')
                     plate = plate.decode(self.plate_encode)
-                    times = raw_input('input save time: ')
-                    self.save_label(self.img_files[start_i], plate, int(times))
+                    count = raw_input('input save time: ')
+                    self.save_label(self.img_files[start_i], plate, int(count))
                     start_i += 1
                     common.write_data(self.index_file, str(start_i), 'w')
                     break
