@@ -18,7 +18,7 @@ class SignOcr:
         self.image_dir = image_dir
         self.plate_encode = "utf8"
         self.label_normal_file = os.path.join('.', 'label_normal.txt')
-        self.label_green_file = os.path.join('.', 'label_green.txt')
+        self.label_test_file = os.path.join('.', 'label_test.txt')
         self.label_error_file = os.path.join('.', 'label_error.txt')
         self.index_file = os.path.join('.', 'index.txt')
 
@@ -72,15 +72,25 @@ class SignOcr:
             # str = raw_input('wait ...')
         return
 
-    def save_label(self, file_name, plate):
+    def save_label(self, file_name, plate, times=1):
         print('save_label ...')
         data = file_name + ":" + plate.encode(self.plate_encode) + '\n'
         print('[save_label] plate len: %d' % len(plate))
 
         if len(plate) == 7:  # 正常车牌
-            common.write_data(self.label_normal_file, data, 'a+')
+            if times == 1:
+                common.write_data(self.label_normal_file, data, 'a+')
+            else:
+                for i in range(times):
+                    common.write_data(self.label_normal_file, data, 'a+')
+                common.write_data(self.label_test_file, data, 'a+')
         elif len(plate) == 8:  # 新能源车牌
-            common.write_data(self.label_normal_file, data, 'a+')
+            if times == 1:
+                common.write_data(self.label_normal_file, data, 'a+')
+            else:
+                for i in range(times):
+                    common.write_data(self.label_normal_file, data, 'a+')
+                common.write_data(self.label_test_file, data, 'a+')
         else:  # 其他车牌
             common.write_data(self.label_error_file, data, 'a+')
 
@@ -117,7 +127,30 @@ class SignOcr:
                 k = cv2.waitKey(1) & 0xFF
                 if k == ord('s'):
                     self.save_label(self.img_files[start_i], plate)
+                    start_i += 1
+                    common.write_data(self.index_file, str(start_i), 'w')
+                    break
 
+                if k == ord('1'):
+                    self.save_label(self.img_files[start_i], plate, 1)
+                    start_i += 1
+                    common.write_data(self.index_file, str(start_i), 'w')
+                    break
+
+                if k == ord('2'):
+                    self.save_label(self.img_files[start_i], plate, 2)
+                    start_i += 1
+                    common.write_data(self.index_file, str(start_i), 'w')
+                    break
+
+                if k == ord('3'):
+                    self.save_label(self.img_files[start_i], plate, 3)
+                    start_i += 1
+                    common.write_data(self.index_file, str(start_i), 'w')
+                    break
+
+                if k == ord('5'):
+                    self.save_label(self.img_files[start_i], plate, 5)
                     start_i += 1
                     common.write_data(self.index_file, str(start_i), 'w')
                     break
@@ -126,7 +159,6 @@ class SignOcr:
                     print('delete ...')
                     common.exe_cmd('rm -r ' + self.img_files[start_i])
                     self.img_files.pop(start_i)
-
                     self.img = cv2.imread(self.img_files[start_i])
                     self.img = cv2.resize(self.img, (self.img.shape[1]*times, self.img.shape[0]*times))
                     cv2.imshow('sign_image', self.img)
@@ -134,10 +166,9 @@ class SignOcr:
 
                 if k == ord('c'):
                     plate = raw_input('input new plate: ')
-                    # plate = plate.decode('utf8')
                     plate = plate.decode(self.plate_encode)
-                    self.save_label(self.img_files[start_i], plate)
-
+                    times = raw_input('input save time: ')
+                    self.save_label(self.img_files[start_i], plate, int(times))
                     start_i += 1
                     common.write_data(self.index_file, str(start_i), 'w')
                     break
@@ -164,8 +195,8 @@ if __name__ == '__main__':
     # image_dir = "../Data/car_recognition/train/province_1"
     # image_dir = "../Data/car_recognition/train/province_2"
     # image_dir = "../Data/car_recognition/train/province_3"
-    # image_dir = "../Data/car_recognition/train/province_4"
-    image_dir = "../Data/car_recognition/train/failed_5"
+    image_dir = "../Data/car_recognition/train/province_4"
+    # image_dir = "../Data/car_recognition/train/failed_5"
 
     sign_ocr = SignOcr(image_dir)
     sign_ocr.use_platform()
