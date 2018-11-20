@@ -173,26 +173,52 @@ class SignOcr:
                     common.write_data(self.index_file, str(start_i), 'w')
                     break
 
+    def check_start(self, root_path, label_name, restart=False):
+        if restart is False:
+            try:
+                start_i = int(common.read_data(self.index_file, 'r'))
+                print('start_index: ' + str(start_i))
+            except Exception, e:
+                print e
+                start_i = 0
+        else:
+            start_i = 0
+
+        index = 0
+        times = 4
+
+        with open(os.path.join(root_path, label_name)) as f:
+            label_lines = f.readlines()
+            total_len = len(label_lines)
+            for line in label_lines:
+                if index >= start_i:
+                    line = line.replace('\r', '').replace('\n', '')
+                    print(line)
+                    list_str = line.split(':')
+                    print("[%d/%d] %s" % (index, total_len, list_str[1]))
+                    self.img = cv2.imread(os.path.join(root_path, list_str[0]))
+                    self.img = cv2.resize(self.img, (self.img.shape[1] * times, self.img.shape[0] * times))
+
+                    while True:
+                        cv2.imshow('check_image', self.img)
+
+                        # 保存这张图片
+                        k = cv2.waitKey(1) & 0xFF
+                        if k == ord('y'):
+                            common.write_data('error.txt', line + "\n", 'a+')
+                            break
+
+                        if k == ord('n'):
+                            break
+
+                    index += 1
+                    start_i = index
+                    common.write_data('index.txt', str(start_i), 'w')
+                else:
+                    index += 1
+
 
 if __name__ == '__main__':
-    # image_dir = "../Data/car_recognition/test/blue_2"
-    # image_dir = "../Data/car_recognition/test/blue_3"
-    # image_dir = "../Data/car_recognition/test/blue_failed_1"
-    # image_dir = "../Data/car_recognition/test/green_2"
-    # image_dir = "../Data/car_recognition/test/blue_failed_2"
-    # image_dir = "../Data/car_recognition/test/province_1"
-
-    # image_dir = "../Data/car_recognition/train/blue_闽_1"
-    # image_dir = "../Data/car_recognition/train/blue_yue_1"
-    # image_dir = "../Data/car_recognition/train/blue_粤_1"
-    # image_dir = "../Data/car_recognition/train/blue_鄂_1"
-    # image_dir = "../Data/car_recognition/train/blue_京_1"
-    # image_dir = "../Data/car_recognition/train/blue_苏_1"
-    # image_dir = "../Data/car_recognition/train/blue_浙_1"
-    # image_dir = "../Data/car_recognition/train/blue_failed_1"
-    # image_dir = "../Data/car_recognition/train/green_2"
-    # image_dir = "../Data/car_recognition/train/blue_failed_2"
-    # image_dir = "../Data/car_recognition/train/province_1"
     # image_dir = "../Data/car_recognition/train/province_2"
     # image_dir = "../Data/car_recognition/train/province_3"
     image_dir = "../Data/car_recognition/train/province_4"
@@ -201,6 +227,7 @@ if __name__ == '__main__':
     sign_ocr = SignOcr(image_dir)
     sign_ocr.use_platform()
 
-    sign_ocr.sign_start()
-    # sign_ocr.review_start(12)
+    # sign_ocr.sign_start()
+    sign_ocr.check_start("../Data/car_recognition/train", "labels_normal.txt")
+    # sign_ocr.review_start()
 
