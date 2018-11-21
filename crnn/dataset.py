@@ -64,7 +64,7 @@ class lmdbDataset(Dataset):
                 label = self.target_transform(label)
 
         # print(img)
-        label = label.decode('utf-8')
+        # label = label.decode('utf-8')
         # print(len(label))
         return (img, label)
 
