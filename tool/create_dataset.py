@@ -69,7 +69,8 @@ def createDataset(outputPath, imagePathList, labelList, lexiconList=None, checkV
 
 
 def transformation():
-    root_path = '../../Data/car_recognition/train/'
+    # root_path = '../../Data/car_recognition/train/'
+    root_path = '../../Data/car_recognition/test/'
     label_name = os.path.join(root_path, 'labels_normal.txt')
 
     image_path_list = list()
