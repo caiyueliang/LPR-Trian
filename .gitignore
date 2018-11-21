@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+crnn/data/
+crnn/train/
+crnn/val/
+
 # Distribution / packaging
 .Python
 .idea
