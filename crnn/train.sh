@@ -1,1 +1,1 @@
-bash train.py --trainRoot ./train/ --valRoot ./val/
+bash train.py --trainRoot ./train/ --valRoot ./val/ --cuda
