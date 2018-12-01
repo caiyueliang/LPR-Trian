@@ -31,10 +31,10 @@ parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--pretrained', default='', help="path to pretrained model (to continue training)")
 # parser.add_argument('--alphabet', type=str, default='0123456789abcdefghijklmnopqrstuvwxyz')
-# parser.add_argument('--alphabet', type=str, default=u"京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新" +
-#                                                     u"0123456789ABCDEFGHJKLMNPQRSTUVWXYZ港学使警澳挂军北南广沈兰成济海民航领")
-parser.add_argument('--alphabet', type=str, default="京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新" +
-                                                    "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ港学使警澳挂军北南广沈兰成济海民航")
+parser.add_argument('--alphabet', type=unicode, default=u"京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新" +
+                                                        u"0123456789ABCDEFGHJKLMNPQRSTUVWXYZ港学使警澳挂军北南广沈兰成济海民航领")
+# parser.add_argument('--alphabet', type=str, default="京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新" +
+#                                                     "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ港学使警澳挂军北南广沈兰成济海民航领")
 parser.add_argument('--expr_dir', default='expr', help='Where to store samples and models')
 parser.add_argument('--displayInterval', type=int, default=100, help='Interval to be displayed')
 parser.add_argument('--n_test_disp', type=int, default=10, help='Number of samples to display when test')
@@ -77,6 +77,7 @@ test_dataset = dataset.lmdbDataset(
     root=opt.valRoot, transform=dataset.resizeNormalize((100, 32)))
 
 nclass = len(opt.alphabet) + 1
+print(nclass)
 nc = 1
 
 converter = utils.strLabelConverter(opt.alphabet)
