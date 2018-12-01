@@ -1,3 +1,4 @@
+# encoding: utf-8
 from __future__ import print_function
 from __future__ import division
 
@@ -24,14 +25,18 @@ parser.add_argument('--batchSize', type=int, default=64, help='input batch size'
 parser.add_argument('--imgH', type=int, default=32, help='the height of the input image to network')
 parser.add_argument('--imgW', type=int, default=100, help='the width of the input image to network')
 parser.add_argument('--nh', type=int, default=256, help='size of the lstm hidden state')
-parser.add_argument('--nepoch', type=int, default=25, help='number of epochs to train for')
+parser.add_argument('--nepoch', type=int, default=1000, help='number of epochs to train for')
 # TODO(meijieru): epoch -> iter
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--pretrained', default='', help="path to pretrained model (to continue training)")
-parser.add_argument('--alphabet', type=str, default='0123456789abcdefghijklmnopqrstuvwxyz')
+# parser.add_argument('--alphabet', type=str, default='0123456789abcdefghijklmnopqrstuvwxyz')
+# parser.add_argument('--alphabet', type=str, default=u"京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新" +
+#                                                     u"0123456789ABCDEFGHJKLMNPQRSTUVWXYZ港学使警澳挂军北南广沈兰成济海民航领")
+parser.add_argument('--alphabet', type=str, default="京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新" +
+                                                    "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ港学使警澳挂军北南广沈兰成济海民航")
 parser.add_argument('--expr_dir', default='expr', help='Where to store samples and models')
-parser.add_argument('--displayInterval', type=int, default=500, help='Interval to be displayed')
+parser.add_argument('--displayInterval', type=int, default=100, help='Interval to be displayed')
 parser.add_argument('--n_test_disp', type=int, default=10, help='Number of samples to display when test')
 parser.add_argument('--valInterval', type=int, default=500, help='Interval to be displayed')
 parser.add_argument('--saveInterval', type=int, default=500, help='Interval to be displayed')
@@ -187,27 +192,28 @@ def trainBatch(net, criterion, optimizer):
     return cost
 
 
-for epoch in range(opt.nepoch):
-    train_iter = iter(train_loader)
-    i = 0
-    while i < len(train_loader):
-        for p in crnn.parameters():
-            p.requires_grad = True
-        crnn.train()
+if __name__ == '__main__':
+    for epoch in range(opt.nepoch):
+        train_iter = iter(train_loader)
+        i = 0
+        while i < len(train_loader):
+            for p in crnn.parameters():
+                p.requires_grad = True
+            crnn.train()
 
-        cost = trainBatch(crnn, criterion, optimizer)
-        loss_avg.add(cost)
-        i += 1
+            cost = trainBatch(crnn, criterion, optimizer)
+            loss_avg.add(cost)
+            i += 1
 
-        if i % opt.displayInterval == 0:
-            print('[%d/%d][%d/%d] Loss: %f' %
-                  (epoch, opt.nepoch, i, len(train_loader), loss_avg.val()))
-            loss_avg.reset()
+            if i % opt.displayInterval == 0:
+                print('[%d/%d][%d/%d] Loss: %f' %
+                      (epoch, opt.nepoch, i, len(train_loader), loss_avg.val()))
+                loss_avg.reset()
 
-        if i % opt.valInterval == 0:
-            val(crnn, test_dataset, criterion)
+            if i % opt.valInterval == 0:
+                val(crnn, test_dataset, criterion)
 
-        # do checkpointing
-        if i % opt.saveInterval == 0:
-            torch.save(
-                crnn.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))
+            # do checkpointing
+            if i % opt.saveInterval == 0:
+                torch.save(
+                    crnn.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))
