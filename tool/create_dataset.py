@@ -81,7 +81,8 @@ def transformation(root_path, output_path):
             line = line.replace('\r', '').replace('\n', '')
             list_str = line.split(':')
             image_path_list.append(os.path.join(root_path, list_str[0]))
-            label = list_str[1].decode('utf-8')
+            # label = list_str[1].decode('utf-8')
+            # label_list.append(label)
             label_list.append(list_str[1])
 
     createDataset(output_path, image_path_list, label_list)

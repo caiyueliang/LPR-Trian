@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--trainRoot', required=True, help='path to dataset')
 parser.add_argument('--valRoot', required=True, help='path to dataset')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
-parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
+parser.add_argument('--batchSize', type=int, default=32, help='input batch size')
 parser.add_argument('--imgH', type=int, default=32, help='the height of the input image to network')
 parser.add_argument('--imgW', type=int, default=100, help='the width of the input image to network')
 parser.add_argument('--nh', type=int, default=256, help='size of the lstm hidden state')
@@ -80,7 +80,7 @@ nclass = len(opt.alphabet) + 1
 print(nclass)
 nc = 1
 
-converter = utils.strLabelConverter(opt.alphabet)
+converter = utils.strLabelConverter(alphabet=opt.alphabet)
 criterion = CTCLoss()
 
 
@@ -150,7 +150,10 @@ def val(net, dataset, criterion, max_iter=100):
         cpu_images, cpu_texts = data
         batch_size = cpu_images.size(0)
         utils.loadData(image, cpu_images)
+        # print(cpu_texts)
         t, l = converter.encode(cpu_texts)
+        # print(t)
+        # print(l)
         utils.loadData(text, t)
         utils.loadData(length, l)
 
@@ -180,7 +183,12 @@ def trainBatch(net, criterion, optimizer):
     cpu_images, cpu_texts = data
     batch_size = cpu_images.size(0)
     utils.loadData(image, cpu_images)
+    # print(cpu_texts)
+    # cpu_texts = [text.decode('utf-8') for text in cpu_texts]
+    # print(cpu_texts)
     t, l = converter.encode(cpu_texts)
+    # print(t)
+    # print(l)
     utils.loadData(text, t)
     utils.loadData(length, l)
 
@@ -193,28 +201,27 @@ def trainBatch(net, criterion, optimizer):
     return cost
 
 
-if __name__ == '__main__':
-    for epoch in range(opt.nepoch):
-        train_iter = iter(train_loader)
-        i = 0
-        while i < len(train_loader):
-            for p in crnn.parameters():
-                p.requires_grad = True
-            crnn.train()
+for epoch in range(opt.nepoch):
+    train_iter = iter(train_loader)
+    i = 0
+    while i < len(train_loader):
+        for p in crnn.parameters():
+            p.requires_grad = True
+        crnn.train()
 
-            cost = trainBatch(crnn, criterion, optimizer)
-            loss_avg.add(cost)
-            i += 1
+        cost = trainBatch(crnn, criterion, optimizer)
+        loss_avg.add(cost)
+        i += 1
 
-            if i % opt.displayInterval == 0:
-                print('[%d/%d][%d/%d] Loss: %f' %
-                      (epoch, opt.nepoch, i, len(train_loader), loss_avg.val()))
-                loss_avg.reset()
+        if i % opt.displayInterval == 0:
+            print('[%d/%d][%d/%d] Loss: %f' %
+                  (epoch, opt.nepoch, i, len(train_loader), loss_avg.val()))
+            loss_avg.reset()
 
-            if i % opt.valInterval == 0:
-                val(crnn, test_dataset, criterion)
+        if i % opt.valInterval == 0:
+            val(crnn, test_dataset, criterion)
 
-            # do checkpointing
-            if i % opt.saveInterval == 0:
-                torch.save(
-                    crnn.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))
+        # do checkpointing
+        if i % opt.saveInterval == 0:
+            torch.save(
+                crnn.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))

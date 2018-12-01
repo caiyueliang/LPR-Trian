@@ -18,38 +18,60 @@ class strLabelConverter(object):
         ignore_case (bool, default=True): whether or not to ignore all of the case.
     """
 
-    def __init__(self, alphabet, ignore_case=True):
-        self._ignore_case = ignore_case
-        if self._ignore_case:
-            alphabet = alphabet.lower()
-        self.alphabet = alphabet + '-'  # for `-1` index
-
+    # def __init__(self, alphabet, ignore_case=True):
+    #     self._ignore_case = ignore_case
+    #     if self._ignore_case:
+    #         alphabet = alphabet.lower()
+    #     self.alphabet = alphabet + '-'  # for `-1` index
+    #
+    #     self.dict = {}
+    #     for i, char in enumerate(alphabet):
+    #         # NOTE: 0 is reserved for 'blank' required by wrap_ctc
+    #         self.dict[char] = i + 1
+    def __init__(self, alphabet):
+        self.alphabet = alphabet + u'-'  # for `-1` index
         self.dict = {}
         for i, char in enumerate(alphabet):
             # NOTE: 0 is reserved for 'blank' required by wrap_ctc
             self.dict[char] = i + 1
 
-    def encode(self, text):
-        """Support batch or single str.
-
-        Args:
-            text (str or list of str): texts to convert.
-
-        Returns:
-            torch.IntTensor [length_0 + length_1 + ... length_{n - 1}]: encoded texts.
-            torch.IntTensor [n]: length of each text.
-        """
-        if isinstance(text, str):
-            text = [
-                self.dict[char.lower() if self._ignore_case else char]
-                for char in text
-            ]
-            length = [len(text)]
-        elif isinstance(text, collections.Iterable):
-            length = [len(s) for s in text]
-            text = ''.join(text)
-            text, _ = self.encode(text)
+    def encode(self, text, depth=0):
+        """Support batch or single str."""
+        length = []
+        result=[]
+        for str in text:
+            str = unicode(str, "utf8")
+            length.append(len(str))
+            for char in str:
+               #print(char)
+               index = self.dict[char]
+               result.append(index)
+        text = result
         return (torch.IntTensor(text), torch.IntTensor(length))
+
+    # def encode(self, text):
+    #     """Support batch or single str.
+    #
+    #     Args:
+    #         text (str or list of str): texts to convert.
+    #
+    #     Returns:
+    #         torch.IntTensor [length_0 + length_1 + ... length_{n - 1}]: encoded texts.
+    #         torch.IntTensor [n]: length of each text.
+    #     """
+    #     if isinstance(text, str):
+    #         text = [
+    #             self.dict[char.lower() if self._ignore_case else char]
+    #             for char in text
+    #         ]
+    #         length = [len(text)]
+    #     elif isinstance(text, collections.Iterable):
+    #         length = [len(s) for s in text]
+    #         text = ''.join(text)
+    #         # print(text)
+    #         # print(type(text))
+    #         text, _ = self.encode(text)
+    #     return (torch.IntTensor(text), torch.IntTensor(length))
 
     def decode(self, t, length, raw=False):
         """Decode encoded texts back into strs.
