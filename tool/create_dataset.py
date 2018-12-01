@@ -68,9 +68,9 @@ def createDataset(outputPath, imagePathList, labelList, lexiconList=None, checkV
     print('Created dataset with %d samples' % nSamples)
 
 
-def transformation():
+def transformation(root_path, output_path):
     # root_path = '../../Data/car_recognition/train/'
-    root_path = '../../Data/car_recognition/test/'
+    # root_path = '../../Data/car_recognition/test/'
     label_name = os.path.join(root_path, 'labels_normal.txt')
 
     image_path_list = list()
@@ -81,11 +81,13 @@ def transformation():
             line = line.replace('\r', '').replace('\n', '')
             list_str = line.split(':')
             image_path_list.append(os.path.join(root_path, list_str[0]))
+            label = list_str[1].decode('utf-8')
             label_list.append(list_str[1])
 
-    createDataset('./', image_path_list, label_list)
+    createDataset(output_path, image_path_list, label_list)
 
 
 if __name__ == '__main__':
-    transformation()
+    transformation('../../Data/car_recognition/train/', '../crnn/train/')
+    transformation('../../Data/car_recognition/test/', '../crnn/val/')
     pass
