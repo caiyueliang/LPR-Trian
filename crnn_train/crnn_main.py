@@ -7,6 +7,7 @@ import torch.backends.cudnn as cudnn
 import torch.optim as optim
 import torch.utils.data
 from torch.autograd import Variable
+from torchvision import transforms as T
 import numpy as np
 from warpctc_pytorch import CTCLoss
 import os
@@ -23,7 +24,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--trainroot', help='path to dataset',default='../crnn/train')
 parser.add_argument('--valroot', help='path to dataset',default='../crnn/val')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=1)
-parser.add_argument('--batchSize', type=int, default=32, help='input batch size')
+parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
 # parser.add_argument('--imgH', type=int, default=32, help='the height of the input image to network')
 # parser.add_argument('--imgW', type=int, default=256, help='the width of the input image to network')
 parser.add_argument('--imgH', type=int, default=32, help='the height of the input image to network')
@@ -65,19 +66,28 @@ cudnn.benchmark = True
 if torch.cuda.is_available() and not opt.cuda:
     print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-train_dataset = dataset.lmdbDataset(root=opt.trainroot)
+my_transform = T.Compose([
+    T.Resize((opt.imgH, opt.imgW)),
+    T.ToTensor(),
+    T.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
+])
+
+train_dataset = dataset.lmdbDataset(root=opt.trainroot, transform=my_transform)
 assert train_dataset
-if not opt.random_sample:
-    sampler = dataset.randomSequentialSampler(train_dataset, opt.batchSize)
-else:
-    sampler = None
+# if not opt.random_sample:
+#     sampler = dataset.randomSequentialSampler(train_dataset, opt.batchSize)
+# else:
+#     sampler = None
+# train_loader = torch.utils.data.DataLoader(
+#     train_dataset, batch_size=opt.batchSize,
+#     shuffle=False, sampler=sampler,
+#     num_workers=int(opt.workers),
+#     collate_fn=dataset.alignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio=opt.keep_ratio))
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=opt.batchSize,
-    shuffle=False, sampler=sampler,
-    num_workers=int(opt.workers),
-    collate_fn=dataset.alignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio=opt.keep_ratio))
-test_dataset = dataset.lmdbDataset(
-    root=opt.valroot, transform=dataset.resizeNormalize((256, 32)))
+    shuffle=True, num_workers=int(opt.workers))
+
+test_dataset = dataset.lmdbDataset(root=opt.valroot, transform=my_transform)
 
 ngpu = int(opt.ngpu)
 nh = int(opt.nh)
@@ -140,7 +150,7 @@ def val(net, dataset, criterion, max_iter=2):
 
     net.eval()
     data_loader = torch.utils.data.DataLoader(
-        dataset, shuffle=True, batch_size=opt.batchSize, num_workers=int(opt.workers))
+        dataset, shuffle=False, batch_size=opt.batchSize, num_workers=int(opt.workers))
     val_iter = iter(data_loader)
 
     i = 0
@@ -209,11 +219,11 @@ def clean_txt(txt):
     return newTxt
 
 
-def trainBatch(net, criterion, optimizer, flage=False):
+def train_batch(net, criterion, optimizer, flage=False):
     data = train_iter.next()
-    cpu_images, cpu_texts = data##decode utf-8 to unicode
+    cpu_images, cpu_texts = data        # decode utf-8 to unicode
     if ifUnicode:
-        cpu_texts = [ clean_txt(tx.decode('utf-8'))  for tx in cpu_texts]
+        cpu_texts = [clean_txt(tx.decode('utf-8')) for tx in cpu_texts]
         
     batch_size = cpu_images.size(0)
     utils.loadData(image, cpu_images)
@@ -232,10 +242,10 @@ def trainBatch(net, criterion, optimizer, flage=False):
     optimizer.step()
     return cost
 
+
 num = 0
 lasttestLoss = 10000
 testLoss = 10000
-import os
 
 
 def delete(path):
@@ -263,7 +273,7 @@ for epoch in range(opt.niter):
         #    cost = trainBatch(crnn, criterion, optimizer,True)
         #    numLoss = 0
         # else:
-        cost = trainBatch(crnn, criterion, optimizer)
+        cost = train_batch(crnn, criterion, optimizer)
         loss_avg.add(cost)
         i += 1
 
