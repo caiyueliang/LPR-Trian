@@ -35,8 +35,8 @@ parser.add_argument('--lr', type=float, default=0.001, help='learning rate for C
 parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
-# parser.add_argument('--crnn', help="path to crnn (to continue training)", default='./save_model/netCRNN.pth')
-parser.add_argument('--crnn', help="path to crnn (to continue training)", default='')
+parser.add_argument('--crnn', help="path to crnn (to continue training)", default='./save_model/netCRNN.pth')
+# parser.add_argument('--crnn', help="path to crnn (to continue training)", default='')
 parser.add_argument('--alphabet', default=alphabet)
 parser.add_argument('--experiment', help='Where to store samples and models', default='./save_model')
 parser.add_argument('--displayInterval', type=int, default=100, help='Interval to be displayed')
@@ -142,26 +142,85 @@ else:
     optimizer = optim.RMSprop(crnn.parameters(), lr=opt.lr)
 
 
-def val(net, dataset, criterion, max_iter=2):
+# def val(net, dataset, criterion, max_iter=2):
+#     print('Start val')
+#
+#     for p in crnn.parameters():
+#         p.requires_grad = False
+#
+#     net.eval()
+#     data_loader = torch.utils.data.DataLoader(
+#         dataset, shuffle=False, batch_size=opt.batchSize, num_workers=int(opt.workers))
+#     val_iter = iter(data_loader)
+#
+#     i = 0
+#     n_correct = 0
+#     loss_avg = utils.averager()
+#
+#     max_iter = min(max_iter, len(data_loader))
+#     for i in range(max_iter):
+#         data = val_iter.next()
+#         i += 1
+#         cpu_images, cpu_texts = data
+#         batch_size = cpu_images.size(0)
+#         utils.loadData(image, cpu_images)
+#         if ifUnicode:
+#             cpu_texts = [clean_txt(tx.decode('utf-8')) for tx in cpu_texts]
+#         # print(cpu_texts)
+#         t, l = converter.encode(cpu_texts)
+#         # print(t)
+#         # print(l)
+#         utils.loadData(text, t)
+#         utils.loadData(length, l)
+#
+#         preds = crnn(image)
+#         preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
+#         cost = criterion(preds, text, preds_size, length) / batch_size
+#         loss_avg.add(cost)
+#
+#         # print(preds)
+#         # print(preds.shape)
+#         _, preds = preds.max(2)
+#         # print(preds)
+#         # print(preds.shape)
+#         # preds = preds.squeeze(2)
+#         # print(preds)
+#         # print(preds.shape)
+#         preds = preds.transpose(1, 0).contiguous().view(-1)
+#         # print(preds)
+#         # print(preds.shape)
+#         sim_preds = converter.decode(preds.data, preds_size.data, raw=False)
+#         print(sim_preds)
+#         print(cpu_texts)
+#         for pred, target in zip(sim_preds, cpu_texts):
+#             if pred.strip() == target.strip():
+#                 n_correct += 1
+#
+#     # raw_preds = converter.decode(preds.data, preds_size.data, raw=True)[:opt.n_test_disp]
+#     # for raw_pred, pred, gt in zip(raw_preds, sim_preds, cpu_texts):
+#         # print((pred, gt))
+#         # print
+#     accuracy = n_correct / float(max_iter * opt.batchSize)
+#     testLoss = loss_avg.val()
+#     print('Test loss: %f, accuray: %f' % (testLoss, accuracy))
+#     return testLoss, accuracy
+
+def val(net, dataset, criterion):
     print('Start val')
 
     for p in crnn.parameters():
         p.requires_grad = False
 
     net.eval()
-    data_loader = torch.utils.data.DataLoader(
+    test_loader = torch.utils.data.DataLoader(
         dataset, shuffle=False, batch_size=opt.batchSize, num_workers=int(opt.workers))
-    val_iter = iter(data_loader)
 
-    i = 0
     n_correct = 0
     loss_avg = utils.averager()
 
-    max_iter = min(max_iter, len(data_loader))
-    for i in range(max_iter):
-        data = val_iter.next()
-        i += 1
-        cpu_images, cpu_texts = data
+    for data, target in test_loader:
+        cpu_images = data
+        cpu_texts = target
         batch_size = cpu_images.size(0)
         utils.loadData(image, cpu_images)
         if ifUnicode:
@@ -190,17 +249,13 @@ def val(net, dataset, criterion, max_iter=2):
         # print(preds)
         # print(preds.shape)
         sim_preds = converter.decode(preds.data, preds_size.data, raw=False)
-        print(sim_preds)
-        print(cpu_texts)
+        # print(sim_preds)
+        # print(cpu_texts)
         for pred, target in zip(sim_preds, cpu_texts):
             if pred.strip() == target.strip():
                 n_correct += 1
 
-    # raw_preds = converter.decode(preds.data, preds_size.data, raw=True)[:opt.n_test_disp]
-    # for raw_pred, pred, gt in zip(raw_preds, sim_preds, cpu_texts):
-        # print((pred, gt))
-        # print
-    accuracy = n_correct / float(max_iter * opt.batchSize)
+    accuracy = n_correct / float(len(test_loader.dataset))
     testLoss = loss_avg.val()
     print('Test loss: %f, accuray: %f' % (testLoss, accuracy))
     return testLoss, accuracy

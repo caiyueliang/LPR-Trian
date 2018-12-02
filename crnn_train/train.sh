@@ -1,1 +1,1 @@
-python crnn_main.py --cuda
+python crnn_main_new.py --cuda
