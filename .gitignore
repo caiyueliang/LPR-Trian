@@ -9,6 +9,7 @@ __pycache__/
 crnn/data/
 crnn/train/
 crnn/val/
+crnn_train/save_model/
 
 # Distribution / packaging
 .Python

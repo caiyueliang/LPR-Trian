@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--trainRoot', required=True, help='path to dataset')
 parser.add_argument('--valRoot', required=True, help='path to dataset')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
-parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
+parser.add_argument('--batchSize', type=int, default=32, help='input batch size')
 parser.add_argument('--imgH', type=int, default=32, help='the height of the input image to network')
 parser.add_argument('--imgW', type=int, default=100, help='the width of the input image to network')
 parser.add_argument('--nh', type=int, default=256, help='size of the lstm hidden state')
@@ -36,7 +36,7 @@ parser.add_argument('--alphabet', type=unicode, default=u"京沪津渝冀晋蒙�
 # parser.add_argument('--alphabet', type=str, default="京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新" +
 #                                                     "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ港学使警澳挂军北南广沈兰成济海民航领")
 parser.add_argument('--expr_dir', default='expr', help='Where to store samples and models')
-parser.add_argument('--displayInterval', type=int, default=1, help='Interval to be displayed')
+parser.add_argument('--displayInterval', type=int, default=100, help='Interval to be displayed')
 parser.add_argument('--n_test_disp', type=int, default=10, help='Number of samples to display when test')
 parser.add_argument('--valInterval', type=int, default=100, help='Interval to be displayed')
 parser.add_argument('--saveInterval', type=int, default=500, help='Interval to be displayed')
@@ -150,10 +150,12 @@ def val(net, dataset, criterion, max_iter=100):
         cpu_images, cpu_texts = data
         batch_size = cpu_images.size(0)
         utils.loadData(image, cpu_images)
-        print(cpu_texts)
+        # print(cpu_texts)
         t, l = converter.encode(cpu_texts)
-        print(t)
-        print(l)
+        # print(t)
+        # print(t.shape)
+        # print(l)
+        # print(l.shape)
         utils.loadData(text, t)
         utils.loadData(length, l)
 
@@ -162,21 +164,30 @@ def val(net, dataset, criterion, max_iter=100):
         cost = criterion(preds, text, preds_size, length) / batch_size
         loss_avg.add(cost)
 
-        print(preds)
-        print(preds.size)
+        # print(preds)
+        # print(preds.shape)
         _, preds = preds.max(2)
-        print(preds)
-        print(preds.size)
-        preds = preds.squeeze(2)
+        # print(preds)
+        # print(preds.shape)
+        # preds = preds.squeeze(2)
+        # print(preds)
+        # print(preds.shape)
         preds = preds.transpose(1, 0).contiguous().view(-1)
+        # print(preds)
+        # print(preds.shape)
         sim_preds = converter.decode(preds.data, preds_size.data, raw=False)
+        # print(sim_preds)
+
+        # for pred, target in zip(sim_preds, cpu_texts):
+        #     if pred == target.lower():
+        #         n_correct += 1
         for pred, target in zip(sim_preds, cpu_texts):
-            if pred == target.lower():
+            if pred in target and target in pred:
                 n_correct += 1
 
-    raw_preds = converter.decode(preds.data, preds_size.data, raw=True)[:opt.n_test_disp]
-    for raw_pred, pred, gt in zip(raw_preds, sim_preds, cpu_texts):
-        print('%-20s => %-20s, gt: %-20s' % (raw_pred, pred, gt))
+    # raw_preds = converter.decode(preds.data, preds_size.data, raw=True)[:opt.n_test_disp]
+    # for raw_pred, pred, gt in zip(raw_preds, sim_preds, cpu_texts):
+    #     print('%-20s => %-20s, gt: %-20s' % (raw_pred, pred, gt))
 
     accuracy = n_correct / float(max_iter * opt.batchSize)
     print('Test loss: %f, accuray: %f' % (loss_avg.val(), accuracy))
@@ -195,6 +206,8 @@ def trainBatch(net, criterion, optimizer):
     utils.loadData(length, l)
 
     preds = crnn(image)
+    # print(preds)
+    # print(preds.shape)
     preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
     cost = criterion(preds, text, preds_size, length) / batch_size
     crnn.zero_grad()
