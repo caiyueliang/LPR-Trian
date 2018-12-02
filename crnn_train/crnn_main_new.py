@@ -15,6 +15,7 @@ import utils
 import dataset
 from keys import alphabet
 import models.crnn as crnn
+import time
 
 
 def parse_argvs():
@@ -72,6 +73,7 @@ def val(net, dataset, criterion, use_unicode):
     n_correct = 0
     loss_avg = utils.averager()
 
+    time_start = time.time()
     for data, target in test_loader:
         cpu_images = data
         cpu_texts = target
@@ -109,10 +111,13 @@ def val(net, dataset, criterion, use_unicode):
             if pred.strip() == target.strip():
                 n_correct += 1
 
+    time_end = time.time()
+    time_avg = float(time_end - time_start) / float(len(test_loader.dataset))
     accuracy = n_correct / float(len(test_loader.dataset))
-    testLoss = loss_avg.val()
-    # print('[Test] loss: %f, accuray: %f' % (testLoss, accuracy))
-    return testLoss, accuracy
+    test_loss = loss_avg.val()
+    loss_avg.reset()
+    print('[Test] loss: %f, accuray: %f, time: %f' % (testLoss, accuracy, time_avg))
+    return test_loss, accuracy
 
 
 def clean_txt(txt):
@@ -266,8 +271,8 @@ if __name__ == '__main__':
 
             if i % opt.valInterval == 0:
                 testLoss, accuracy = val(crnn, test_dataset, criterion, use_unicode=opt.use_unicode)
-                print("[Test] epoch:{}, step:{}, test loss:{}, accuracy:{}".format(epoch, num, testLoss, accuracy))
-                loss_avg.reset()
+                # print("[Test] epoch:{}, step:{}, test loss:{}, accuracy:{}".format(epoch, num, testLoss, accuracy))
+                # loss_avg.reset()
 
             # do checkpointing
             num += 1
