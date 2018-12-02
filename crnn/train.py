@@ -150,10 +150,10 @@ def val(net, dataset, criterion, max_iter=100):
         cpu_images, cpu_texts = data
         batch_size = cpu_images.size(0)
         utils.loadData(image, cpu_images)
-        # print(cpu_texts)
+        print(cpu_texts)
         t, l = converter.encode(cpu_texts)
-        # print(t)
-        # print(l)
+        print(t)
+        print(l)
         utils.loadData(text, t)
         utils.loadData(length, l)
 

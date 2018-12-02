@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--trainroot', help='path to dataset',default='../crnn/train')
 parser.add_argument('--valroot', help='path to dataset',default='../crnn/val')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=1)
-parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
+parser.add_argument('--batchSize', type=int, default=32, help='input batch size')
 parser.add_argument('--imgH', type=int, default=32, help='the height of the input image to network')
 parser.add_argument('--imgW', type=int, default=256, help='the width of the input image to network')
 parser.add_argument('--nh', type=int, default=256, help='size of the lstm hidden state')
@@ -36,9 +36,9 @@ parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--crnn', help="path to crnn (to continue training)", default='')
 parser.add_argument('--alphabet', default=alphabet)
 parser.add_argument('--experiment', help='Where to store samples and models', default='./save_model')
-parser.add_argument('--displayInterval', type=int, default=1, help='Interval to be displayed')
+parser.add_argument('--displayInterval', type=int, default=100, help='Interval to be displayed')
 parser.add_argument('--n_test_disp', type=int, default=1000, help='Number of samples to display when test')
-parser.add_argument('--valInterval', type=int, default=50, help='Interval to be displayed')
+parser.add_argument('--valInterval', type=int, default=1000, help='Interval to be displayed')
 parser.add_argument('--saveInterval', type=int, default=1000, help='Interval to be displayed')
 parser.add_argument('--adam', action='store_true', help='Whether to use adam (default is rmsprop)')
 parser.add_argument('--adadelta', action='store_true', help='Whether to use adadelta (default is rmsprop)')
@@ -81,6 +81,7 @@ ngpu = int(opt.ngpu)
 nh = int(opt.nh)
 alphabet = opt.alphabet
 nclass = len(alphabet) + 1
+print("nclass: ", nclass)
 nc = 1
 
 converter = utils.strLabelConverter(alphabet)
@@ -154,7 +155,10 @@ def val(net, dataset, criterion, max_iter=2):
         utils.loadData(image, cpu_images)
         if ifUnicode:
             cpu_texts = [clean_txt(tx.decode('utf-8')) for tx in cpu_texts]
+        print(cpu_texts)
         t, l = converter.encode(cpu_texts)
+        print(t)
+        print(l)
         utils.loadData(text, t)
         utils.loadData(length, l)
 
@@ -163,8 +167,16 @@ def val(net, dataset, criterion, max_iter=2):
         cost = criterion(preds, text, preds_size, length) / batch_size
         loss_avg.add(cost)
 
+        print(preds)
+        print(preds.shape)
         _, preds = preds.max(2)
+        print(_)
+        print(_.shape)
+        print(preds)
+        print(preds.shape)
         preds = preds.squeeze(2)
+        print(preds)
+        print(preds.shape)
         preds = preds.transpose(1, 0).contiguous().view(-1)
         sim_preds = converter.decode(preds.data, preds_size.data, raw=False)
         for pred, target in zip(sim_preds, cpu_texts):
