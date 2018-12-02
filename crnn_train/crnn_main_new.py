@@ -14,11 +14,7 @@ import os
 import utils
 import dataset
 from keys import alphabet
-#Alphabet = [e.encode('utf-8') for e in alphabet]
 import models.crnn as crnn
-#with open('../run/char.txt') as f:
-#    newChars = f.read().strip().decode('utf-8')
-#alphabet += u''.join(list(set(newChars) - set(alphabet)))
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--trainroot', help='path to dataset',default='../crnn/train')
@@ -50,55 +46,6 @@ parser.add_argument('--random_sample', action='store_true', help='whether to sam
 opt = parser.parse_args()
 print(opt)
 
-ifUnicode = True
-if opt.experiment is None:
-    opt.experiment = 'expr'
-os.system('mkdir {0}'.format(opt.experiment))
-
-opt.manualSeed = random.randint(1, 10000)  # fix seed
-print("Random Seed: ", opt.manualSeed)
-random.seed(opt.manualSeed)
-np.random.seed(opt.manualSeed)
-torch.manual_seed(opt.manualSeed)
-
-cudnn.benchmark = True
-
-if torch.cuda.is_available() and not opt.cuda:
-    print("WARNING: You have a CUDA device, so you should probably run with --cuda")
-
-my_transform = T.Compose([
-    T.Resize((opt.imgH, opt.imgW)),
-    T.ToTensor(),
-    T.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
-])
-
-train_dataset = dataset.lmdbDataset(root=opt.trainroot, transform=my_transform)
-assert train_dataset
-# if not opt.random_sample:
-#     sampler = dataset.randomSequentialSampler(train_dataset, opt.batchSize)
-# else:
-#     sampler = None
-# train_loader = torch.utils.data.DataLoader(
-#     train_dataset, batch_size=opt.batchSize,
-#     shuffle=False, sampler=sampler,
-#     num_workers=int(opt.workers),
-#     collate_fn=dataset.alignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio=opt.keep_ratio))
-train_loader = torch.utils.data.DataLoader(
-    train_dataset, batch_size=opt.batchSize,
-    shuffle=True, num_workers=int(opt.workers))
-
-test_dataset = dataset.lmdbDataset(root=opt.valroot, transform=my_transform)
-
-ngpu = int(opt.ngpu)
-nh = int(opt.nh)
-alphabet = opt.alphabet
-nclass = len(alphabet) + 1
-print("nclass: ", nclass)
-nc = 1
-
-converter = utils.strLabelConverter(alphabet)
-criterion = CTCLoss()
-
 
 # custom weights initialization called on crnn
 def weights_init(m):
@@ -110,105 +57,8 @@ def weights_init(m):
         m.bias.data.fill_(0)
 
 
-crnn = crnn.CRNN(opt.imgH, nc, nclass, nh, ngpu)
-crnn.apply(weights_init)
-if opt.crnn != '':
-    print('loading pretrained model from %s' % opt.crnn)
-    crnn.load_state_dict(torch.load(opt.crnn))
-print(crnn)
-
-image = torch.FloatTensor(opt.batchSize, 3, opt.imgH, opt.imgH)
-text = torch.IntTensor(opt.batchSize * 5)
-length = torch.IntTensor(opt.batchSize)
-
-if opt.cuda:
-    crnn.cuda()
-    image = image.cuda()
-    criterion = criterion.cuda()
-
-image = Variable(image)
-text = Variable(text)
-length = Variable(length)
-
-# loss averager
-loss_avg = utils.averager()
-
-# setup optimizer
-if opt.adam:
-    optimizer = optim.Adam(crnn.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-elif opt.adadelta:
-    optimizer = optim.Adadelta(crnn.parameters(), lr=opt.lr)
-else:
-    optimizer = optim.RMSprop(crnn.parameters(), lr=opt.lr)
-
-
-# def val(net, dataset, criterion, max_iter=2):
-#     print('Start val')
-#
-#     for p in crnn.parameters():
-#         p.requires_grad = False
-#
-#     net.eval()
-#     data_loader = torch.utils.data.DataLoader(
-#         dataset, shuffle=False, batch_size=opt.batchSize, num_workers=int(opt.workers))
-#     val_iter = iter(data_loader)
-#
-#     i = 0
-#     n_correct = 0
-#     loss_avg = utils.averager()
-#
-#     max_iter = min(max_iter, len(data_loader))
-#     for i in range(max_iter):
-#         data = val_iter.next()
-#         i += 1
-#         cpu_images, cpu_texts = data
-#         batch_size = cpu_images.size(0)
-#         utils.loadData(image, cpu_images)
-#         if ifUnicode:
-#             cpu_texts = [clean_txt(tx.decode('utf-8')) for tx in cpu_texts]
-#         # print(cpu_texts)
-#         t, l = converter.encode(cpu_texts)
-#         # print(t)
-#         # print(l)
-#         utils.loadData(text, t)
-#         utils.loadData(length, l)
-#
-#         preds = crnn(image)
-#         preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
-#         cost = criterion(preds, text, preds_size, length) / batch_size
-#         loss_avg.add(cost)
-#
-#         # print(preds)
-#         # print(preds.shape)
-#         _, preds = preds.max(2)
-#         # print(preds)
-#         # print(preds.shape)
-#         # preds = preds.squeeze(2)
-#         # print(preds)
-#         # print(preds.shape)
-#         preds = preds.transpose(1, 0).contiguous().view(-1)
-#         # print(preds)
-#         # print(preds.shape)
-#         sim_preds = converter.decode(preds.data, preds_size.data, raw=False)
-#         print(sim_preds)
-#         print(cpu_texts)
-#         for pred, target in zip(sim_preds, cpu_texts):
-#             if pred.strip() == target.strip():
-#                 n_correct += 1
-#
-#     # raw_preds = converter.decode(preds.data, preds_size.data, raw=True)[:opt.n_test_disp]
-#     # for raw_pred, pred, gt in zip(raw_preds, sim_preds, cpu_texts):
-#         # print((pred, gt))
-#         # print
-#     accuracy = n_correct / float(max_iter * opt.batchSize)
-#     testLoss = loss_avg.val()
-#     print('Test loss: %f, accuray: %f' % (testLoss, accuracy))
-#     return testLoss, accuracy
-
 def val(net, dataset, criterion):
-    print('Start val')
-
-    for p in crnn.parameters():
+    for p in net.parameters():
         p.requires_grad = False
 
     net.eval()
@@ -232,7 +82,7 @@ def val(net, dataset, criterion):
         utils.loadData(text, t)
         utils.loadData(length, l)
 
-        preds = crnn(image)
+        preds = net(image)
         preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
         cost = criterion(preds, text, preds_size, length) / batch_size
         loss_avg.add(cost)
@@ -257,7 +107,7 @@ def val(net, dataset, criterion):
 
     accuracy = n_correct / float(len(test_loader.dataset))
     testLoss = loss_avg.val()
-    print('Test loss: %f, accuray: %f' % (testLoss, accuracy))
+    print('[Test] loss: %f, accuray: %f' % (testLoss, accuracy))
     return testLoss, accuracy
 
 
@@ -286,21 +136,16 @@ def train_batch(net, criterion, optimizer, flage=False):
     utils.loadData(text, t)
     utils.loadData(length, l)
 
-    preds = crnn(image)
+    preds = net(image)
     preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
     cost = criterion(preds, text, preds_size, length) / batch_size
-    crnn.zero_grad()
+    net.zero_grad()
     cost.backward()
     if flage:
         lr = 0.0001
-        optimizer = optim.Adadelta(crnn.parameters(), lr=lr)
+        optimizer = optim.Adadelta(net.parameters(), lr=lr)
     optimizer.step()
     return cost
-
-
-num = 0
-lasttestLoss = 10000
-testLoss = 10000
 
 
 def delete(path):
@@ -314,43 +159,121 @@ def delete(path):
         os.remove(p)
     
 
-numLoss = 0     # 判断训练参数是否下降
-    
-for epoch in range(opt.niter):
-    train_iter = iter(train_loader)
-    i = 0
-    while i < len(train_loader):
-        # print('The step{} ........\n'.format(i))
-        for p in crnn.parameters():
-            p.requires_grad = True
-        crnn.train()
-        # if numLoss>50:
-        #    cost = trainBatch(crnn, criterion, optimizer,True)
-        #    numLoss = 0
-        # else:
-        cost = train_batch(crnn, criterion, optimizer)
-        loss_avg.add(cost)
-        i += 1
+if __name__ == '__main__':
+    ifUnicode = True
+    if opt.experiment is None:
+        opt.experiment = 'expr'
+    os.system('mkdir {0}'.format(opt.experiment))
 
-        if i % opt.displayInterval == 0:
-            print('[%d/%d][%d/%d] Loss: %f' % (epoch, opt.niter, i, len(train_loader), loss_avg.val()))
-            loss_avg.reset()
+    opt.manualSeed = random.randint(1, 10000)  # fix seed
+    print("Random Seed: ", opt.manualSeed)
+    random.seed(opt.manualSeed)
+    np.random.seed(opt.manualSeed)
+    torch.manual_seed(opt.manualSeed)
 
-        if i % opt.valInterval == 0:
-            testLoss, accuracy = val(crnn, test_dataset, criterion)
-            print("epoch:{}, step:{}, test loss:{}, accuracy:{}".format(epoch, num, testLoss, accuracy))
-            loss_avg.reset()
+    cudnn.benchmark = True
 
-        # do checkpointing
-        num += 1
-        # lasttestLoss = min(lasttestLoss,testLoss)
+    if torch.cuda.is_available() and not opt.cuda:
+        print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-        if lasttestLoss > testLoss:
-             print("The step {},last lost:{}, current: {},save model!".format(num,lasttestLoss,testLoss))
-             lasttestLoss = testLoss
-             #delete(opt.experiment)##删除历史模型
-             torch.save(crnn.state_dict(), '{}/netCRNN.pth'.format(opt.experiment))
-             numLoss = 0
-        else:
-            numLoss += 1
+    my_transform = T.Compose([
+        T.Resize((opt.imgH, opt.imgW)),
+        T.ToTensor(),
+        T.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
+    ])
+
+    train_dataset = dataset.lmdbDataset(root=opt.trainroot, transform=my_transform)
+    assert train_dataset
+
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=opt.batchSize,
+        shuffle=True, num_workers=int(opt.workers))
+
+    test_dataset = dataset.lmdbDataset(root=opt.valroot, transform=my_transform)
+
+    ngpu = int(opt.ngpu)
+    nh = int(opt.nh)
+    alphabet = opt.alphabet
+    nclass = len(alphabet) + 1
+    print("nclass: ", nclass)
+    nc = 1
+
+    # =================================================================================
+    converter = utils.strLabelConverter(alphabet)
+    criterion = CTCLoss()
+
+    crnn = crnn.CRNN(opt.imgH, nc, nclass, nh, ngpu)
+    crnn.apply(weights_init)
+    if opt.crnn != '':
+        print('loading pretrained model from %s' % opt.crnn)
+        crnn.load_state_dict(torch.load(opt.crnn))
+    print(crnn)
+
+    image = torch.FloatTensor(opt.batchSize, 3, opt.imgH, opt.imgH)
+    text = torch.IntTensor(opt.batchSize * 5)
+    length = torch.IntTensor(opt.batchSize)
+
+    if opt.cuda:
+        crnn.cuda()
+        image = image.cuda()
+        criterion = criterion.cuda()
+
+    image = Variable(image)
+    text = Variable(text)
+    length = Variable(length)
+
+    # loss averager
+    loss_avg = utils.averager()
+
+    # setup optimizer
+    if opt.adam:
+        optimizer = optim.Adam(crnn.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+    elif opt.adadelta:
+        optimizer = optim.Adadelta(crnn.parameters(), lr=opt.lr)
+    else:
+        optimizer = optim.RMSprop(crnn.parameters(), lr=opt.lr)
+
+    # =================================================================================
+    num = 0
+    lasttestLoss = 10000
+    testLoss = 10000
+    numLoss = 0                 # 判断训练参数是否下降
+
+    for epoch in range(opt.niter):
+        train_iter = iter(train_loader)
+        i = 0
+        while i < len(train_loader):
+            # print('The step{} ........\n'.format(i))
+            for p in crnn.parameters():
+                p.requires_grad = True
+            crnn.train()
+            # if numLoss>50:
+            #    cost = trainBatch(crnn, criterion, optimizer,True)
+            #    numLoss = 0
+            # else:
+            cost = train_batch(crnn, criterion, optimizer)
+            loss_avg.add(cost)
+            i += 1
+
+            if i % opt.displayInterval == 0:
+                print('[%d/%d][%d/%d] Loss: %f' % (epoch, opt.niter, i, len(train_loader), loss_avg.val()))
+                loss_avg.reset()
+
+            if i % opt.valInterval == 0:
+                testLoss, accuracy = val(crnn, test_dataset, criterion)
+                print("epoch:{}, step:{}, test loss:{}, accuracy:{}".format(epoch, num, testLoss, accuracy))
+                loss_avg.reset()
+
+            # do checkpointing
+            num += 1
+            # lasttestLoss = min(lasttestLoss,testLoss)
+
+            if lasttestLoss > testLoss:
+                print("The step {},last lost:{}, current: {},save model!".format(num,lasttestLoss,testLoss))
+                lasttestLoss = testLoss
+                # delete(opt. experiment)               # 删除历史模型
+                torch.save(crnn.state_dict(), '{}/netCRNN.pth'.format(opt.experiment))
+                numLoss = 0
+            else:
+                numLoss += 1
 
