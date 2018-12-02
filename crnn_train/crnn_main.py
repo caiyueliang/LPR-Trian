@@ -30,12 +30,12 @@ parser.add_argument('--imgH', type=int, default=32, help='the height of the inpu
 parser.add_argument('--imgW', type=int, default=110, help='the width of the input image to network')
 parser.add_argument('--nh', type=int, default=256, help='size of the lstm hidden state')
 parser.add_argument('--niter', type=int, default=1000000, help='number of epochs to train for')
-parser.add_argument('--lr', type=float, default=0.005, help='learning rate for Critic, default=0.00005')
+parser.add_argument('--lr', type=float, default=0.001, help='learning rate for Critic, default=0.00005')
 parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
-# parser.add_argument('--crnn', help="path to crnn (to continue training)", default='../pretrain-models/netCRNN.pth')
-parser.add_argument('--crnn', help="path to crnn (to continue training)", default='')
+parser.add_argument('--crnn', help="path to crnn (to continue training)", default='./save_model/netCRNN.pth')
+# parser.add_argument('--crnn', help="path to crnn (to continue training)", default='')
 parser.add_argument('--alphabet', default=alphabet)
 parser.add_argument('--experiment', help='Where to store samples and models', default='./save_model')
 parser.add_argument('--displayInterval', type=int, default=100, help='Interval to be displayed')
@@ -125,8 +125,7 @@ loss_avg = utils.averager()
 
 # setup optimizer
 if opt.adam:
-    optimizer = optim.Adam(crnn.parameters(), lr=opt.lr,
-                           betas=(opt.beta1, 0.999))
+    optimizer = optim.Adam(crnn.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
 elif opt.adadelta:
     optimizer = optim.Adadelta(crnn.parameters(), lr=opt.lr)
 else:
@@ -178,8 +177,11 @@ def val(net, dataset, criterion, max_iter=2):
         # print(preds)
         # print(preds.shape)
         preds = preds.transpose(1, 0).contiguous().view(-1)
+        # print(preds)
+        # print(preds.shape)
         sim_preds = converter.decode(preds.data, preds_size.data, raw=False)
         print(sim_preds)
+        print(cpu_texts)
         for pred, target in zip(sim_preds, cpu_texts):
             if pred.strip() == target.strip():
                 n_correct += 1
@@ -207,7 +209,7 @@ def clean_txt(txt):
     return newTxt
 
 
-def trainBatch(net, criterion, optimizer,flage=False):
+def trainBatch(net, criterion, optimizer, flage=False):
     data = train_iter.next()
     cpu_images, cpu_texts = data##decode utf-8 to unicode
     if ifUnicode:
@@ -230,10 +232,11 @@ def trainBatch(net, criterion, optimizer,flage=False):
     optimizer.step()
     return cost
 
-num =0
+num = 0
 lasttestLoss = 10000
 testLoss = 10000
 import os
+
 
 def delete(path):
     """
