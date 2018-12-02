@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--trainRoot', required=True, help='path to dataset')
 parser.add_argument('--valRoot', required=True, help='path to dataset')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
-parser.add_argument('--batchSize', type=int, default=32, help='input batch size')
+parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
 parser.add_argument('--imgH', type=int, default=32, help='the height of the input image to network')
 parser.add_argument('--imgW', type=int, default=100, help='the width of the input image to network')
 parser.add_argument('--nh', type=int, default=256, help='size of the lstm hidden state')
@@ -36,9 +36,9 @@ parser.add_argument('--alphabet', type=unicode, default=u"京沪津渝冀晋蒙�
 # parser.add_argument('--alphabet', type=str, default="京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新" +
 #                                                     "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ港学使警澳挂军北南广沈兰成济海民航领")
 parser.add_argument('--expr_dir', default='expr', help='Where to store samples and models')
-parser.add_argument('--displayInterval', type=int, default=100, help='Interval to be displayed')
+parser.add_argument('--displayInterval', type=int, default=1, help='Interval to be displayed')
 parser.add_argument('--n_test_disp', type=int, default=10, help='Number of samples to display when test')
-parser.add_argument('--valInterval', type=int, default=500, help='Interval to be displayed')
+parser.add_argument('--valInterval', type=int, default=100, help='Interval to be displayed')
 parser.add_argument('--saveInterval', type=int, default=500, help='Interval to be displayed')
 parser.add_argument('--lr', type=float, default=0.01, help='learning rate for Critic, not used by adadealta')
 parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
@@ -162,7 +162,11 @@ def val(net, dataset, criterion, max_iter=100):
         cost = criterion(preds, text, preds_size, length) / batch_size
         loss_avg.add(cost)
 
+        print(preds)
+        print(preds.size)
         _, preds = preds.max(2)
+        print(preds)
+        print(preds.size)
         preds = preds.squeeze(2)
         preds = preds.transpose(1, 0).contiguous().view(-1)
         sim_preds = converter.decode(preds.data, preds_size.data, raw=False)
@@ -183,8 +187,6 @@ def trainBatch(net, criterion, optimizer):
     cpu_images, cpu_texts = data
     batch_size = cpu_images.size(0)
     utils.loadData(image, cpu_images)
-    # print(cpu_texts)
-    # cpu_texts = [text.decode('utf-8') for text in cpu_texts]
     # print(cpu_texts)
     t, l = converter.encode(cpu_texts)
     # print(t)
