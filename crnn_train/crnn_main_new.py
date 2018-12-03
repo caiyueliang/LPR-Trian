@@ -52,75 +52,85 @@ def parse_argvs():
 
 class ModuleTrain:
     def __init__(self, train_path, test_path, model_file, model, img_h=32, img_w=110, batch_size=64, lr=1e-3,
-                 use_unicode=True, best_acc=0.9):
+                 use_unicode=True, best_acc=0.9, use_gpu=True, workers=1):
         self.model = model
+        self.model_file = model_file
         self.use_unicode = use_unicode
+        self.img_h = img_h
+        self.img_w = img_w
+        self.batch_size = batch_size
+        self.lr = lr
+        self.best_acc = best_acc
+        self.use_gpu = use_gpu
+        self.workers = workers
+
         self.converter = utils.strLabelConverter(alphabet)
         self.criterion = CTCLoss()
+        
+        self.image = torch.FloatTensor(self.batch_size, 3, self.img_h, self.img_w)
+        self.text = torch.IntTensor(self.batch_size * 5)
+        self.length = torch.IntTensor(self.batch_size)
 
-        if torch.cuda.is_available() and not opt.cuda:
-            print("WARNING: You have a CUDA device, so you should probably run with --cuda")
+        # image = Variable(self.image)
+        # text = Variable(self.text)
+        # length = Variable(self.length)
+
+        if self.use_gpu:
+            print("[use gpu] ...")
+            self.model = self.model.cuda()
+            self.image = self.image.cuda()
+            self.criterion = self.criterion.cuda()
+        if torch.cuda.is_available() and not self.use_gpu:
+            print("[WARNING] You have a CUDA device, so you should probably run with --cuda")
 
         self.transform = T.Compose([
-            T.Resize((opt.imgH, opt.imgW)),
+            T.Resize((self.img_h, self.img_w)),
             T.ToTensor(),
             T.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
         ])
 
         train_dataset = dataset.lmdbDataset(root=train_path, transform=self.transform)
         assert train_dataset
-        self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=opt.batchSize,
-                                                        shuffle=True, num_workers=int(opt.workers))
+        self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=self.batch_size,
+                                                        shuffle=True, num_workers=int(self.workers))
 
         test_dataset = dataset.lmdbDataset(root=test_path, transform=self.transform)
         assert test_dataset
-        self.test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=opt.batchSize,
-                                                       shuffle=False, num_workers=int(opt.workers))
+        self.test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=self.batch_size,
+                                                       shuffle=False, num_workers=int(self.workers))
+
+        # setup optimizer
+        # if opt.adam:
+        #     self.optimizer = optim.Adam(crnn.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+        # elif opt.adadelta:
+        #     self.optimizer = optim.Adadelta(crnn.parameters(), lr=opt.lr)
+        # else:
+        #     self.optimizer = optim.RMSprop(crnn.parameters(), lr=opt.lr)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
     def train_batch(self):
         data = train_iter.next()
         cpu_images, cpu_texts = data  # decode utf-8 to unicode
         if self.use_unicode:
-            cpu_texts = [clean_txt(tx.decode('utf-8')) for tx in cpu_texts]
+            cpu_texts = [tx.decode('utf-8') for tx in cpu_texts]
 
         batch_size = cpu_images.size(0)
-        utils.loadData(image, cpu_images)
+        utils.loadData(self.image, cpu_images)
         t, l = self.converter.encode(cpu_texts)
-        utils.loadData(text, t)
-        utils.loadData(length, l)
+        utils.loadData(self.text, t)
+        utils.loadData(self.length, l)
 
-        preds = self.model(image)
+        preds = self.model(self.image)
         preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
-        cost = self.criterion(preds, text, preds_size, length) / batch_size
+        cost = self.criterion(preds, self.text, preds_size, self.length) / batch_size
         self.model.zero_grad()
         cost.backward()
         self.optimizer.step()
         return cost
 
     def train(self):
-        image = torch.FloatTensor(opt.batchSize, 3, opt.imgH, opt.imgH)
-        text = torch.IntTensor(opt.batchSize * 5)
-        length = torch.IntTensor(opt.batchSize)
-
-        if opt.cuda:
-            crnn.cuda()
-            image = image.cuda()
-            criterion = self.criterion.cuda()
-
-        image = Variable(image)
-        text = Variable(text)
-        length = Variable(length)
-
         # loss averager
         loss_avg = utils.averager()
-
-        # setup optimizer
-        if opt.adam:
-            optimizer = optim.Adam(crnn.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-        elif opt.adadelta:
-            optimizer = optim.Adadelta(crnn.parameters(), lr=opt.lr)
-        else:
-            optimizer = optim.RMSprop(crnn.parameters(), lr=opt.lr)
 
         # =================================================================================
         num = 0
@@ -166,6 +176,10 @@ class ModuleTrain:
                     numLoss += 1
 
     def test(self):
+        image = torch.FloatTensor(self.batch_size, 3, opt.imgH, opt.imgH)
+        text = torch.IntTensor(self.batch_size * 5)
+        length = torch.IntTensor(self.batch_size)
+
         for p in self.model.parameters():
             p.requires_grad = False
 
@@ -181,7 +195,7 @@ class ModuleTrain:
             batch_size = cpu_images.size(0)
             utils.loadData(image, cpu_images)
             if self.use_unicode:
-                cpu_texts = [clean_txt(tx.decode('utf-8')) for tx in cpu_texts]
+                cpu_texts = [tx.decode('utf-8') for tx in cpu_texts]
 
             t, l = self.converter.encode(cpu_texts)
             utils.loadData(text, t)
@@ -220,37 +234,37 @@ class ModuleTrain:
 
 
 # custom weights initialization called on crnn
-def weights_init(m):
-    classname = m.__class__.__name__
-    if classname.find('Conv') != -1:
-        m.weight.data.normal_(0.0, 0.02)
-    elif classname.find('BatchNorm') != -1:
-        m.weight.data.normal_(1.0, 0.02)
-        m.bias.data.fill_(0)
+# def weights_init(m):
+#     classname = m.__class__.__name__
+#     if classname.find('Conv') != -1:
+#         m.weight.data.normal_(0.0, 0.02)
+#     elif classname.find('BatchNorm') != -1:
+#         m.weight.data.normal_(1.0, 0.02)
+#         m.bias.data.fill_(0)
 
 
-def clean_txt(txt):
-    """
-    filter char where not in alphabet with ' '
-    """
-    newTxt = u''
-    for t in txt:
-        if t in alphabet:
-            newTxt += t
-        else:
-            newTxt += u' '
-    return newTxt
-
-
-def delete(path):
-    """
-    删除文件
-    """
-    import os
-    import glob
-    paths = glob.glob(path+'/*.pth')
-    for p in paths:
-        os.remove(p)
+# def clean_txt(txt):
+#     """
+#     filter char where not in alphabet with ' '
+#     """
+#     newTxt = u''
+#     for t in txt:
+#         if t in alphabet:
+#             newTxt += t
+#         else:
+#             newTxt += u' '
+#     return newTxt
+#
+#
+# def delete(path):
+#     """
+#     删除文件
+#     """
+#     import os
+#     import glob
+#     paths = glob.glob(path+'/*.pth')
+#     for p in paths:
+#         os.remove(p)
     
 
 if __name__ == '__main__':
@@ -289,7 +303,6 @@ if __name__ == '__main__':
     nc = 1
 
     crnn = crnn.CRNN(opt.imgH, nc, nclass, nh, ngpu)
-    crnn.apply(weights_init)
     if opt.crnn != '':
         print('loading pretrained model from %s' % opt.crnn)
         crnn.load_state_dict(torch.load(opt.crnn))
