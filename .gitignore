@@ -10,6 +10,7 @@ crnn/data/
 crnn/train/
 crnn/val/
 crnn_train/save_model/
+crnn_train/checkpoints/
 
 # Distribution / packaging
 .Python
