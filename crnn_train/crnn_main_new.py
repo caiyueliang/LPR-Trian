@@ -28,7 +28,7 @@ def parse_argvs():
     # parser.add_argument('--imgW', type=int, default=256, help='the width of the input image to network')
     parser.add_argument('--img_h', type=int, default=32, help='the height of the input image to network')
     parser.add_argument('--img_w', type=int, default=110, help='the width of the input image to network')
-    parser.add_argument('--nh', type=int, default=256, help='size of the lstm hidden state')
+    parser.add_argument('--nh', type=int, default=32, help='size of the lstm hidden state')
     parser.add_argument('--niter', type=int, default=100, help='number of epochs to train for')
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate for Critic, default=0.001')
     parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
@@ -118,9 +118,9 @@ class ModuleTrain:
             train_loss = 0.0
             correct = 0
 
-            if epoch_i >= decay_epoch and epoch_i % decay_epoch == 0:                   # 减小学习速率
-                self.lr = self.lr * 0.1
-                self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+            # if epoch_i >= decay_epoch and epoch_i % decay_epoch == 0:                   # 减小学习速率
+            #     self.lr = self.lr * 0.1
+            #     self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
             print('================================================')
             for batch_idx, (data, target) in enumerate(self.train_loader):              # 训练
@@ -262,8 +262,9 @@ class ModuleTrain:
 
         self.model.eval()
 
-        n_correct = 0
-        loss_avg = utils.averager()
+        test_loss = 0.0
+        correct = 0
+        # loss_avg = utils.averager()
 
         time_start = time.time()
         for data, target in self.test_loader:
@@ -283,8 +284,8 @@ class ModuleTrain:
 
             preds = self.model(image)
             preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
-            cost = self.criterion(preds, text, preds_size, length) / batch_size
-            loss_avg.add(cost)
+            loss = self.criterion(preds, text, preds_size, length)
+            test_loss += loss.item()
 
             _, preds = preds.max(2)
             # preds = preds.squeeze(2)
@@ -292,13 +293,12 @@ class ModuleTrain:
             sim_preds = self.converter.decode(preds.data, preds_size.data, raw=False)
             for pred, target in zip(sim_preds, cpu_texts):
                 if pred.strip() == target.strip():
-                    n_correct += 1
+                    correct += 1
 
         time_end = time.time()
         time_avg = float(time_end - time_start) / float(len(self.test_loader.dataset))
-        accuracy = n_correct / float(len(self.test_loader.dataset))
-        test_loss = loss_avg.val()
-        loss_avg.reset()
+        accuracy = correct / float(len(self.test_loader.dataset))
+        test_loss /= len(self.test_loader.dataset)
         print('[Test] loss: %f, accuray: %f, time: %f' % (test_loss, accuracy, time_avg))
         return test_loss, accuracy
 
