@@ -30,7 +30,7 @@ def parse_argvs():
     parser.add_argument('--img_w', type=int, default=110, help='the width of the input image to network')
     parser.add_argument('--nh', type=int, default=256, help='size of the lstm hidden state')
     parser.add_argument('--niter', type=int, default=100, help='number of epochs to train for')
-    parser.add_argument('--lr', type=float, default=0.00002, help='learning rate for Critic, default=0.00005')
+    parser.add_argument('--lr', type=float, default=0.0001, help='learning rate for Critic, default=0.00005')
     parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
     parser.add_argument('--cuda', action='store_true', help='enables cuda')
     parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
@@ -70,7 +70,6 @@ class ModuleTrain:
         if self.use_gpu:
             print("[use gpu] ...")
             self.model = self.model.cuda()
-            self.image = self.image.cuda()
             self.criterion = self.criterion.cuda()
         if torch.cuda.is_available() and not self.use_gpu:
             print("[WARNING] You have a CUDA device, so you should probably run with --cuda")
@@ -110,9 +109,9 @@ class ModuleTrain:
         image = torch.FloatTensor(self.batch_size, 3, self.img_h, self.img_w)
         text = torch.IntTensor(self.batch_size * 5)
         length = torch.IntTensor(self.batch_size)
-        # image = Variable(image)
-        # text = Variable(text)
-        # length = Variable(length)
+        image = Variable(image)
+        text = Variable(text)
+        length = Variable(length)
 
         print('[train] epoch: %d' % epoch)
         for epoch_i in range(epoch):
@@ -125,7 +124,7 @@ class ModuleTrain:
 
             print('================================================')
             for batch_idx, (data, target) in enumerate(self.train_loader):              # 训练
-                data, target = Variable(data), Variable(target)
+                # data, target = Variable(data), Variable(target)
 
                 if self.use_unicode:
                     target = [tx.decode('utf-8') for tx in target]
@@ -136,9 +135,9 @@ class ModuleTrain:
                 utils.loadData(text, t)
                 utils.loadData(length, l)
 
-                # if self.use_gpu:
-                #     data = data.cuda()
-                #     target = target.cuda()
+                if self.use_gpu:
+                    image = image.cuda()
+                    # target = target.cuda()
 
                 # 梯度清0
                 self.optimizer.zero_grad()
@@ -146,15 +145,19 @@ class ModuleTrain:
                 preds = self.model(image)
                 preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
                 loss = self.criterion(preds, text, preds_size, length)
-
                 # 反向传播计算梯度
                 loss.backward()
                 # 更新参数
                 self.optimizer.step()
-
-                predict = torch.argmax(preds, 1)
-                correct += (predict == target).sum().data
                 train_loss += loss.item()
+
+                _, preds = preds.max(2)
+                # preds = preds.squeeze(2)
+                preds = preds.transpose(1, 0).contiguous().view(-1)
+                sim_preds = self.converter.decode(preds.data, preds_size.data, raw=False)
+                for pred, target in zip(sim_preds, target):
+                    if pred.strip() == target.strip():
+                        correct += 1
 
             train_loss /= len(self.train_loader.dataset)
             acc = float(correct) / float(len(self.train_loader.dataset))
@@ -247,6 +250,9 @@ class ModuleTrain:
         image = torch.FloatTensor(self.batch_size, 3, self.img_h, self.img_w)
         text = torch.IntTensor(self.batch_size * 5)
         length = torch.IntTensor(self.batch_size)
+        image = Variable(image)
+        text = Variable(text)
+        length = Variable(length)
 
         for p in self.model.parameters():
             p.requires_grad = False
@@ -268,6 +274,9 @@ class ModuleTrain:
             t, l = self.converter.encode(cpu_texts)
             utils.loadData(text, t)
             utils.loadData(length, l)
+
+            if self.use_gpu:
+                image = image.cuda()
 
             preds = self.model(image)
             preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
