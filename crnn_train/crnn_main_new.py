@@ -66,14 +66,6 @@ class ModuleTrain:
 
         self.converter = utils.strLabelConverter(alphabet)
         self.criterion = CTCLoss()
-        
-        self.image = torch.FloatTensor(self.batch_size, 3, self.img_h, self.img_w)
-        self.text = torch.IntTensor(self.batch_size * 5)
-        self.length = torch.IntTensor(self.batch_size)
-
-        # image = Variable(self.image)
-        # text = Variable(self.text)
-        # length = Variable(self.length)
 
         if self.use_gpu:
             print("[use gpu] ...")
@@ -82,6 +74,12 @@ class ModuleTrain:
             self.criterion = self.criterion.cuda()
         if torch.cuda.is_available() and not self.use_gpu:
             print("[WARNING] You have a CUDA device, so you should probably run with --cuda")
+
+        # 加载模型
+        if os.path.exists(self.model_file):
+            self.load(self.model_file)
+        else:
+            print('[Load model] error !!!')
 
         self.transform = T.Compose([
             T.Resize((self.img_h, self.img_w)),
@@ -108,75 +106,145 @@ class ModuleTrain:
         #     self.optimizer = optim.RMSprop(crnn.parameters(), lr=opt.lr)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
-    def train_batch(self):
-        data = train_iter.next()
-        cpu_images, cpu_texts = data  # decode utf-8 to unicode
-        if self.use_unicode:
-            cpu_texts = [tx.decode('utf-8') for tx in cpu_texts]
+    def train(self, epoch, decay_epoch=80):
+        image = torch.FloatTensor(self.batch_size, 3, self.img_h, self.img_w)
+        text = torch.IntTensor(self.batch_size * 5)
+        length = torch.IntTensor(self.batch_size)
+        # image = Variable(image)
+        # text = Variable(text)
+        # length = Variable(length)
 
-        batch_size = cpu_images.size(0)
-        utils.loadData(self.image, cpu_images)
-        t, l = self.converter.encode(cpu_texts)
-        utils.loadData(self.text, t)
-        utils.loadData(self.length, l)
+        print('[train] epoch: %d' % epoch)
+        for epoch_i in range(epoch):
+            train_loss = 0.0
+            correct = 0
 
-        preds = self.model(self.image)
-        preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
-        cost = self.criterion(preds, self.text, preds_size, self.length) / batch_size
-        self.model.zero_grad()
-        cost.backward()
-        self.optimizer.step()
-        return cost
+            if epoch_i >= decay_epoch and epoch_i % decay_epoch == 0:                   # 减小学习速率
+                self.lr = self.lr * 0.1
+                self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
-    def train(self):
-        # loss averager
-        loss_avg = utils.averager()
+            print('================================================')
+            for batch_idx, (data, target) in enumerate(self.train_loader):              # 训练
+                data, target = Variable(data), Variable(target)
 
-        # =================================================================================
-        num = 0
-        lasttestLoss = 10000
-        testLoss = 10000
-        numLoss = 0  # 判断训练参数是否下降
+                if self.use_unicode:
+                    target = [tx.decode('utf-8') for tx in target]
 
-        for epoch in range(opt.niter):
-            train_iter = iter(train_loader)
-            i = 0
-            while i < len(train_loader):
-                # print('The step{} ........\n'.format(i))
-                for p in crnn.parameters():
-                    p.requires_grad = True
-                crnn.train()
-                # if numLoss>50:
-                #    cost = trainBatch(crnn, criterion, optimizer,True)
-                #    numLoss = 0
-                # else:
-                cost = self.train_batch(crnn, self.criterion, optimizer)
-                loss_avg.add(cost)
-                i += 1
+                batch_size = data.size(0)
+                utils.loadData(image, data)
+                t, l = self.converter.encode(target)
+                utils.loadData(text, t)
+                utils.loadData(length, l)
 
-                if i % opt.displayInterval == 0:
-                    print('[%d/%d][%d/%d] Loss: %f' % (epoch, opt.niter, i, len(train_loader), loss_avg.val()))
-                    loss_avg.reset()
+                # if self.use_gpu:
+                #     data = data.cuda()
+                #     target = target.cuda()
 
-                if i % opt.valInterval == 0:
-                    testLoss, accuracy = self.test()
-                    # print("[Test] epoch:{}, step:{}, test loss:{}, accuracy:{}".format(epoch, num, testLoss, accuracy))
-                    # loss_avg.reset()
+                # 梯度清0
+                self.optimizer.zero_grad()
+                # 计算损失
+                preds = self.model(image)
+                preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
+                loss = self.criterion(preds, text, preds_size, length)
 
-                # do checkpointing
-                num += 1
-                # lasttestLoss = min(lasttestLoss,testLoss)
+                # 反向传播计算梯度
+                loss.backward()
+                # 更新参数
+                self.optimizer.step()
 
-                if lasttestLoss > testLoss:
-                    print("The step {},last lost:{}, current: {},save model!".format(num, lasttestLoss, testLoss))
-                    lasttestLoss = testLoss
-                    torch.save(crnn.state_dict(), '{}/netCRNN.pth'.format(opt.out_put))
-                    numLoss = 0
-                else:
-                    numLoss += 1
+                predict = torch.argmax(preds, 1)
+                correct += (predict == target).sum().data
+                train_loss += loss.item()
+
+            train_loss /= len(self.train_loader.dataset)
+            acc = float(correct) / float(len(self.train_loader.dataset))
+            print('[Train] Epoch: {} \tLoss: {:.6f}\tAcc: {:.6f}\tlr: {}'.format(epoch_i, train_loss, acc, self.lr))
+
+            # Test
+            test_loss, test_acc = self.test()
+            if test_acc > self.best_acc:
+                self.best_acc = test_acc
+                str_list = self.model_file.split('.')
+                best_model_file = ""
+                for str_index in range(len(str_list)):
+                    best_model_file = best_model_file + str_list[str_index]
+                    if str_index == (len(str_list) - 2):
+                        best_model_file += '_best'
+                    if str_index != (len(str_list) - 1):
+                        best_model_file += '.'
+                self.save(best_model_file)  # 保存最好的模型
+
+        self.save(self.model_file)
+
+    # def train_batch(self):
+    #     data = train_iter.next()
+    #     cpu_images, cpu_texts = data  # decode utf-8 to unicode
+    #     if self.use_unicode:
+    #         cpu_texts = [tx.decode('utf-8') for tx in cpu_texts]
+    #
+    #     batch_size = cpu_images.size(0)
+    #     utils.loadData(self.image, cpu_images)
+    #     t, l = self.converter.encode(cpu_texts)
+    #     utils.loadData(self.text, t)
+    #     utils.loadData(self.length, l)
+    #
+    #     preds = self.model(self.image)
+    #     preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
+    #     cost = self.criterion(preds, self.text, preds_size, self.length) / batch_size
+    #     self.model.zero_grad()
+    #     cost.backward()
+    #     self.optimizer.step()
+    #     return cost
+    #
+    # def train(self):
+    #     # loss averager
+    #     loss_avg = utils.averager()
+    #
+    #     # =================================================================================
+    #     num = 0
+    #     lasttestLoss = 10000
+    #     testLoss = 10000
+    #     numLoss = 0  # 判断训练参数是否下降
+    #
+    #     for epoch in range(opt.niter):
+    #         train_iter = iter(train_loader)
+    #         i = 0
+    #         while i < len(train_loader):
+    #             # print('The step{} ........\n'.format(i))
+    #             for p in crnn.parameters():
+    #                 p.requires_grad = True
+    #             crnn.train()
+    #             # if numLoss>50:
+    #             #    cost = trainBatch(crnn, criterion, optimizer,True)
+    #             #    numLoss = 0
+    #             # else:
+    #             cost = self.train_batch()
+    #             loss_avg.add(cost)
+    #             i += 1
+    #
+    #             if i % opt.displayInterval == 0:
+    #                 print('[%d/%d][%d/%d] Loss: %f' % (epoch, opt.niter, i, len(train_loader), loss_avg.val()))
+    #                 loss_avg.reset()
+    #
+    #             if i % opt.valInterval == 0:
+    #                 testLoss, accuracy = self.test()
+    #                 # print("[Test] epoch:{}, step:{}, test loss:{}, accuracy:{}".format(epoch, num, testLoss, accuracy))
+    #                 # loss_avg.reset()
+    #
+    #             # do checkpointing
+    #             num += 1
+    #             # lasttestLoss = min(lasttestLoss,testLoss)
+    #
+    #             if lasttestLoss > testLoss:
+    #                 print("The step {},last lost:{}, current: {},save model!".format(num, lasttestLoss, testLoss))
+    #                 lasttestLoss = testLoss
+    #                 torch.save(crnn.state_dict(), '{}/netCRNN.pth'.format(opt.out_put))
+    #                 numLoss = 0
+    #             else:
+    #                 numLoss += 1
 
     def test(self):
-        image = torch.FloatTensor(self.batch_size, 3, opt.imgH, opt.imgH)
+        image = torch.FloatTensor(self.batch_size, 3, self.img_h, self.img_w)
         text = torch.IntTensor(self.batch_size * 5)
         length = torch.IntTensor(self.batch_size)
 
@@ -270,8 +338,6 @@ class ModuleTrain:
 if __name__ == '__main__':
     opt = parse_argvs()
 
-    os.system('mkdir {0}'.format(opt.out_put))
-
     # opt.manualSeed = random.randint(1, 10000)  # fix seed
     # print("Random Seed: ", opt.manualSeed)
     # random.seed(opt.manualSeed)
@@ -299,18 +365,13 @@ if __name__ == '__main__':
     ngpu = int(opt.ngpu)
     nh = int(opt.nh)
     nclass = len(opt.alphabet) + 1
-    print("nclass: ", nclass)
+    print("[nclass] ", nclass)
     nc = 1
 
-    crnn = crnn.CRNN(opt.imgH, nc, nclass, nh, ngpu)
-    if opt.crnn != '':
-        print('loading pretrained model from %s' % opt.crnn)
-        crnn.load_state_dict(torch.load(opt.crnn))
-    print(crnn)
-
+    crnn = crnn.CRNN(opt.img_h, nc, nclass, nh, ngpu)
     model_train = ModuleTrain(train_path=opt.trainroot, test_path=opt.valroot, model_file=opt.out_put, model=crnn,
                               img_h=opt.img_h, img_w=opt.img_w, batch_size=opt.batch_size, lr=opt.lr)
 
-    model_train.train()
+    model_train.train(200, 80)
     model_train.test()
 
