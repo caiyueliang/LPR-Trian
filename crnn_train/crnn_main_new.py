@@ -30,7 +30,7 @@ def parse_argvs():
     parser.add_argument('--img_w', type=int, default=110, help='the width of the input image to network')
     parser.add_argument('--nh', type=int, default=256, help='size of the lstm hidden state')
     parser.add_argument('--niter', type=int, default=100, help='number of epochs to train for')
-    parser.add_argument('--lr', type=float, default=0.0001, help='learning rate for Critic, default=0.00005')
+    parser.add_argument('--lr', type=float, default=0.001, help='learning rate for Critic, default=0.001')
     parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
     parser.add_argument('--cuda', action='store_true', help='enables cuda')
     parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
@@ -137,14 +137,17 @@ class ModuleTrain:
 
                 if self.use_gpu:
                     image = image.cuda()
-                    # target = target.cuda()
 
                 # 梯度清0
                 self.optimizer.zero_grad()
+                for p in self.model.parameters():
+                    p.requires_grad = True
+                self.model.train()
                 # 计算损失
                 preds = self.model(image)
                 preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
                 loss = self.criterion(preds, text, preds_size, length)
+                # self.model.zero_grad()
                 # 反向传播计算梯度
                 loss.backward()
                 # 更新参数
