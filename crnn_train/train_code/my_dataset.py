@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # encoding: utf-8
 
+import os
 import random
 import torch
 from torch.utils.data import Dataset
@@ -131,8 +132,8 @@ class MyDataset(Dataset):
             self.sample_list = f.readlines()
 
         self.nSamples = len(self.sample_list)
-        print(self.sample_list)
-        print(self.nSamples)
+        # print(self.sample_list)
+        print('label_file: %s samples len: %d' % (self.label_file, self.nSamples))
 
         # self.env = lmdb.open(
         #     root,
@@ -157,30 +158,45 @@ class MyDataset(Dataset):
         return self.nSamples
 
     def __getitem__(self, index):
-        assert index <= len(self), 'index range error'
-        index += 1
-        with self.env.begin(write=False) as txn:
-            img_key = 'image-%09d' % index
-            imgbuf = txn.get(img_key)
+        assert index < self.nSamples, 'index range error'
+        record = self.sample_list[index].replace('\n', '').replace('\r', '').replace(' ', '')
+        str_list = record.split(':')
+        label = str_list[-1]
+        image_path = str_list[0]
 
-            buf = six.BytesIO()
-            buf.write(imgbuf)
-            buf.seek(0)
-            try:
-                img = Image.open(buf).convert('L')
-            except IOError:
-                print('Corrupted image for %d' % index)
-                return self[index + 1]
+        img = Image.open(os.path.join(self.root, image_path))
 
-            if self.transform is not None:
-                img = self.transform(img)
+        if self.transform is not None:
+            img = self.transform(img)
 
-            label_key = 'label-%09d' % index
-            label = str(txn.get(label_key))
+        if self.target_transform is not None:
+            label = self.target_transform(label)
+        # index += 1
+        # with self.env.begin(write=False) as txn:
+        #     img_key = 'image-%09d' % index
+        #     imgbuf = txn.get(img_key)
+        #
+        #     buf = six.BytesIO()
+        #     buf.write(imgbuf)
+        #     buf.seek(0)
+        #     try:
+        #         img = Image.open(buf).convert('L')
+        #     except IOError:
+        #         print('Corrupted image for %d' % index)
+        #         return self[index + 1]
+        #
+        #     if self.transform is not None:
+        #         img = self.transform(img)
+        #
+        #     label_key = 'label-%09d' % index
+        #     label = str(txn.get(label_key))
+        #
+        #     if self.target_transform is not None:
+        #         label = self.target_transform(label)
 
-            if self.target_transform is not None:
-                label = self.target_transform(label)
-
+        # print(img)
+        # print(img.size())
+        # print(label)
         return (img, label)
 
 

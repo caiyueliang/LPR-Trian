@@ -48,16 +48,17 @@ if __name__ == '__main__':
     nh = int(opt.nh)
     nclass = len(opt.alphabet) + 1
     print("[nclass] ", nclass)
-    nc = 1
-
-    crnn = crnn.CRNN(opt.img_h, nc, nclass, nh, ngpu)
 
     if opt.new_train_mode is True:
+        nc = 3
+        crnn = crnn.CRNN(opt.img_h, nc, nclass, nh, ngpu)
         model_train = new_mt.ModuleTrain(train_path='../../Data/car_recognition/train',
                                          test_path='../../Data/car_recognition/test',
                                          model_file=opt.out_put, model=crnn,
                                          img_h=opt.img_h, img_w=opt.img_w, batch_size=opt.batch_size, lr=opt.lr)
     else:
+        nc = 1
+        crnn = crnn.CRNN(opt.img_h, nc, nclass, nh, ngpu)
         model_train = old_mt.ModuleTrain(train_path=opt.trainroot, test_path=opt.valroot, model_file=opt.out_put, model=crnn,
                                          img_h=opt.img_h, img_w=opt.img_w, batch_size=opt.batch_size, lr=opt.lr)
 

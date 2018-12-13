@@ -63,6 +63,9 @@ class lmdbDataset(Dataset):
             if self.target_transform is not None:
                 label = self.target_transform(label)
 
+        # print(img)
+        # print(img.size())
+        # print(label)
         return (img, label)
 
 
