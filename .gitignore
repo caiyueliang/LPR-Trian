@@ -11,6 +11,8 @@ crnn/train/
 crnn/val/
 crnn_train/save_model/
 crnn_train/checkpoints/
+crnn_train/train/
+crnn_train/val/
 
 # Distribution / packaging
 .Python

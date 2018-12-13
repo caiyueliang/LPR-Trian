@@ -20,8 +20,8 @@ import time
 
 def parse_argvs():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--trainroot', help='path to dataset',default='../crnn/train')
-    parser.add_argument('--valroot', help='path to dataset',default='../crnn/val')
+    parser.add_argument('--trainroot', help='path to dataset',default='./train')
+    parser.add_argument('--valroot', help='path to dataset',default='./val')
     parser.add_argument('--workers', type=int, help='number of data loading workers', default=1)
     parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
     # parser.add_argument('--imgH', type=int, default=32, help='the height of the input image to network')
