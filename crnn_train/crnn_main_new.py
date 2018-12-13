@@ -182,73 +182,6 @@ class ModuleTrain:
 
         self.save(self.model_file)
 
-    # def train_batch(self):
-    #     data = train_iter.next()
-    #     cpu_images, cpu_texts = data  # decode utf-8 to unicode
-    #     if self.use_unicode:
-    #         cpu_texts = [tx.decode('utf-8') for tx in cpu_texts]
-    #
-    #     batch_size = cpu_images.size(0)
-    #     utils.loadData(self.image, cpu_images)
-    #     t, l = self.converter.encode(cpu_texts)
-    #     utils.loadData(self.text, t)
-    #     utils.loadData(self.length, l)
-    #
-    #     preds = self.model(self.image)
-    #     preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
-    #     cost = self.criterion(preds, self.text, preds_size, self.length) / batch_size
-    #     self.model.zero_grad()
-    #     cost.backward()
-    #     self.optimizer.step()
-    #     return cost
-    #
-    # def train(self):
-    #     # loss averager
-    #     loss_avg = utils.averager()
-    #
-    #     # =================================================================================
-    #     num = 0
-    #     lasttestLoss = 10000
-    #     testLoss = 10000
-    #     numLoss = 0  # 判断训练参数是否下降
-    #
-    #     for epoch in range(opt.niter):
-    #         train_iter = iter(train_loader)
-    #         i = 0
-    #         while i < len(train_loader):
-    #             # print('The step{} ........\n'.format(i))
-    #             for p in crnn.parameters():
-    #                 p.requires_grad = True
-    #             crnn.train()
-    #             # if numLoss>50:
-    #             #    cost = trainBatch(crnn, criterion, optimizer,True)
-    #             #    numLoss = 0
-    #             # else:
-    #             cost = self.train_batch()
-    #             loss_avg.add(cost)
-    #             i += 1
-    #
-    #             if i % opt.displayInterval == 0:
-    #                 print('[%d/%d][%d/%d] Loss: %f' % (epoch, opt.niter, i, len(train_loader), loss_avg.val()))
-    #                 loss_avg.reset()
-    #
-    #             if i % opt.valInterval == 0:
-    #                 testLoss, accuracy = self.test()
-    #                 # print("[Test] epoch:{}, step:{}, test loss:{}, accuracy:{}".format(epoch, num, testLoss, accuracy))
-    #                 # loss_avg.reset()
-    #
-    #             # do checkpointing
-    #             num += 1
-    #             # lasttestLoss = min(lasttestLoss,testLoss)
-    #
-    #             if lasttestLoss > testLoss:
-    #                 print("The step {},last lost:{}, current: {},save model!".format(num, lasttestLoss, testLoss))
-    #                 lasttestLoss = testLoss
-    #                 torch.save(crnn.state_dict(), '{}/netCRNN.pth'.format(opt.out_put))
-    #                 numLoss = 0
-    #             else:
-    #                 numLoss += 1
-
     def test(self):
         image = torch.FloatTensor(self.batch_size, 3, self.img_h, self.img_w)
         text = torch.IntTensor(self.batch_size * 5)
@@ -311,69 +244,11 @@ class ModuleTrain:
         print('[Save model] %s ...' % name)
         torch.save(self.model.state_dict(), name)
         # self.model.save(name)
-
-
-# custom weights initialization called on crnn
-# def weights_init(m):
-#     classname = m.__class__.__name__
-#     if classname.find('Conv') != -1:
-#         m.weight.data.normal_(0.0, 0.02)
-#     elif classname.find('BatchNorm') != -1:
-#         m.weight.data.normal_(1.0, 0.02)
-#         m.bias.data.fill_(0)
-
-
-# def clean_txt(txt):
-#     """
-#     filter char where not in alphabet with ' '
-#     """
-#     newTxt = u''
-#     for t in txt:
-#         if t in alphabet:
-#             newTxt += t
-#         else:
-#             newTxt += u' '
-#     return newTxt
-#
-#
-# def delete(path):
-#     """
-#     删除文件
-#     """
-#     import os
-#     import glob
-#     paths = glob.glob(path+'/*.pth')
-#     for p in paths:
-#         os.remove(p)
     
 
 if __name__ == '__main__':
     opt = parse_argvs()
 
-    # opt.manualSeed = random.randint(1, 10000)  # fix seed
-    # print("Random Seed: ", opt.manualSeed)
-    # random.seed(opt.manualSeed)
-    # np.random.seed(opt.manualSeed)
-    # torch.manual_seed(opt.manualSeed)
-    # cudnn.benchmark = True
-
-    # if torch.cuda.is_available() and not opt.cuda:
-    #     print("WARNING: You have a CUDA device, so you should probably run with --cuda")
-    #
-    # my_transform = T.Compose([
-    #     T.Resize((opt.imgH, opt.imgW)),
-    #     T.ToTensor(),
-    #     T.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
-    # ])
-    #
-    # train_dataset = dataset.lmdbDataset(root=opt.trainroot, transform=my_transform)
-    # assert train_dataset
-    #
-    # train_loader = torch.utils.data.DataLoader(
-    #     train_dataset, batch_size=opt.batchSize,
-    #     shuffle=True, num_workers=int(opt.workers))
-    #
-    # test_dataset = dataset.lmdbDataset(root=opt.valroot, transform=my_transform)
     ngpu = int(opt.ngpu)
     nh = int(opt.nh)
     nclass = len(opt.alphabet) + 1
