@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import argparse
-from keys import alphabet
+from train_code.keys import alphabet
 import models.crnn as crnn
-import model_train
-import model_train_new
+from train_code import model_train
+from train_code import model_train_new
 
 
 def parse_argvs():

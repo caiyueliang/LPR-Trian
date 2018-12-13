@@ -11,14 +11,15 @@ from torchvision import transforms as T
 import numpy as np
 from warpctc_pytorch import CTCLoss
 import os
-import utils
-import dataset
-from keys import alphabet
-#Alphabet = [e.encode('utf-8') for e in alphabet]
+from train_code import utils
+from train_code import dataset
+from train_code.keys import alphabet
+
+# Alphabet = [e.encode('utf-8') for e in alphabet]
 import models.crnn as crnn
-#with open('../run/char.txt') as f:
-#    newChars = f.read().strip().decode('utf-8')
-#alphabet += u''.join(list(set(newChars) - set(alphabet)))
+# with open('../run/char.txt') as f:
+#     newChars = f.read().strip().decode('utf-8')
+# alphabet += u''.join(list(set(newChars) - set(alphabet)))
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--trainroot', help='path to dataset',default='../crnn/train')
