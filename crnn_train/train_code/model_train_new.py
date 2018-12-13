@@ -8,7 +8,7 @@ from torchvision import transforms as T
 from warpctc_pytorch import CTCLoss
 import os
 import utils
-import dataset
+import my_dataset
 from keys import alphabet
 import time
 
@@ -49,13 +49,12 @@ class ModuleTrain:
             T.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
         ])
 
-        train_dataset = dataset.lmdbDataset(root=train_path, transform=self.transform)
-        assert train_dataset
+        train_label = os.path.join(train_path, 'labels_normal.txt')
+        train_dataset = my_dataset.MyDataset(root=train_path, label_file=train_label, transform=self.transform)
         self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=self.batch_size,
                                                         shuffle=True, num_workers=int(self.workers))
-
-        test_dataset = dataset.lmdbDataset(root=test_path, transform=self.transform)
-        assert test_dataset
+        test_label = os.path.join(test_path, 'labels_normal.txt')
+        test_dataset = my_dataset.MyDataset(root=test_path, label_file=test_label, transform=self.transform)
         self.test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=self.batch_size,
                                                        shuffle=False, num_workers=int(self.workers))
 

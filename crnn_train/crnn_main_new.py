@@ -3,8 +3,8 @@ from __future__ import print_function
 import argparse
 from train_code.keys import alphabet
 import models.crnn as crnn
-from train_code import model_train
-from train_code import model_train_new
+from train_code import model_train as old_mt
+from train_code import model_train_new as new_mt
 
 
 def parse_argvs():
@@ -34,6 +34,8 @@ def parse_argvs():
     parser.add_argument('--saveInterval', type=int, default=1000, help='Interval to be displayed')
     parser.add_argument('--adam', action='store_true', help='Whether to use adam (default is rmsprop)')
     parser.add_argument('--adadelta', action='store_true', help='Whether to use adadelta (default is rmsprop)')
+
+    parser.add_argument('--new_train_mode', type=bool, help='new_train_mode', default=True)
     opt = parser.parse_args()
     print(opt)
     return opt
@@ -49,8 +51,15 @@ if __name__ == '__main__':
     nc = 1
 
     crnn = crnn.CRNN(opt.img_h, nc, nclass, nh, ngpu)
-    model_train = model_train.ModuleTrain(train_path=opt.trainroot, test_path=opt.valroot, model_file=opt.out_put, model=crnn,
-                                          img_h=opt.img_h, img_w=opt.img_w, batch_size=opt.batch_size, lr=opt.lr)
+
+    if opt.new_train_mode is True:
+        model_train = new_mt.ModuleTrain(train_path='../../Data/car_recognition/train',
+                                         test_path='../../Data/car_recognition/test',
+                                         model_file=opt.out_put, model=crnn,
+                                         img_h=opt.img_h, img_w=opt.img_w, batch_size=opt.batch_size, lr=opt.lr)
+    else:
+        model_train = old_mt.ModuleTrain(train_path=opt.trainroot, test_path=opt.valroot, model_file=opt.out_put, model=crnn,
+                                         img_h=opt.img_h, img_w=opt.img_w, batch_size=opt.batch_size, lr=opt.lr)
 
     model_train.train(200, 80)
     model_train.test()
