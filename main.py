@@ -101,41 +101,43 @@ def model_seq_rec():
     input_tensor = Input(name='the_input', shape=(164, 48, 3), dtype='float32')
     x = input_tensor
     base_conv = 32
-    # print('input_tensor', x.shape)
+    print('input_tensor', x.shape)
 
     for i in range(3):
         x = Conv2D(base_conv * (2 ** i), (3, 3))(x)
-        # print('Conv2D', x.shape)
+        print('Conv2D', x.shape)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
         x = MaxPooling2D(pool_size=(2, 2))(x)
-        # print('MaxPooling2D', x.shape)          # [None, 18, 4, 128]
+        print('MaxPooling2D', x.shape)          # [None, 18, 4, 128]
 
     conv_shape = x.get_shape()
-    # print(conv_shape)
+    print(conv_shape)
     x = Reshape(target_shape=(int(conv_shape[1]), int(conv_shape[2] * conv_shape[3])))(x)
-    # print('Reshape', x.shape)                   # [None, 18, 512]
+    print('Reshape', x.shape)                   # [None, 18, 512]
     x = Dense(32)(x)
-    # print('Dense', x.shape)                     # [None, 18, 32]
+    print('Dense', x.shape)                     # [None, 18, 32]
     x = BatchNormalization()(x)
+    print('BatchNormalization', x.shape)        # [None, 18, 32]
     x = Activation('relu')(x)
+    print('Activation', x.shape)                # [None, 18, 32]
 
     gru_1 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru1')(x)
-    # print('gru_1', gru_1.shape)                 # [None, None, 256]
+    print('gru_1', gru_1.shape)                 # [None, None, 256]
     gru_1b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru1_b')(x)
-    # print('gru_1b', gru_1b.shape)               # [None, None, 256]
+    print('gru_1b', gru_1b.shape)               # [None, None, 256]
     gru1_merged = add([gru_1, gru_1b])
-    # print('gru1_merged', gru1_merged.shape)     # [None, None, 256]
+    print('gru1_merged', gru1_merged.shape)     # [None, None, 256]
 
     gru_2 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru2')(gru1_merged)
-    # print('gru_2', gru_2.shape)                 # [None, None, 256]
+    print('gru_2', gru_2.shape)                 # [None, None, 256]
     gru_2b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru2_b')(gru1_merged)
-    # print('gru_2b', gru_2b.shape)               # [None, None, 256]
+    print('gru_2b', gru_2b.shape)               # [None, None, 256]
     x = concatenate([gru_2, gru_2b])
-    # print('concatenate', x.shape)               # [None, None, 512]
+    print('concatenate', x.shape)               # [None, None, 512]
     x = Dropout(0.25)(x)
     x = Dense(n_class, kernel_initializer='he_normal', activation='softmax')(x)
-    # print('Dense', x.shape)                     # [None, 18, 84]
+    print('Dense', x.shape)                     # [None, 18, 84]
 
     # base_model = Model(inputs=input_tensor, outputs=x)
     # base_model.load_weights(model_path)
@@ -564,7 +566,7 @@ def test_model_layers_1():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
 
     # test_model_layers()
-    # test_model_layers_1()
+    test_model_layers_1()
