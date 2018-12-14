@@ -123,10 +123,10 @@ class CGRU(nn.Module):
         x = self.fc_end(x)
         print('fc_end: ', x.size())         # (18, -1, 84)
 
-        x = x.permute(1, 0, 2)              # [b, w, c]
-        print('permute: ', x.size())        # (-1, 18, 84)
+        # x = x.permute(1, 0, 2)            # [b, w, c]
+        # print('permute: ', x.size())      # (-1, 18, 84)
         x = self.softmax(x)
-        print('softmax: ', x.size())        # (-1, 18, 84)
+        print('softmax: ', x.size())        # (-1, 18, 84) # (18, -1, 84)
 
         output = x
         return output
@@ -204,6 +204,7 @@ class CRNN(nn.Module):
         )
 
     def forward(self, input):
+        print(input.size())
         # conv features
         conv = utils.data_parallel(self.cnn, input, self.ngpu)
         b, c, h, w = conv.size()
@@ -213,7 +214,7 @@ class CRNN(nn.Module):
 
         # rnn features
         output = utils.data_parallel(self.rnn, conv, self.ngpu)
-
+        print(output.size())
         return output
 
 
@@ -231,8 +232,18 @@ def softmax_test():
 
 
 def gru_test():
+    print('gru_test')
     model = CGRU(width=164, height=48, n_class=84)
-    data = Variable(torch.randn(16, 3, 48, 164))
+    data = Variable(torch.randn(1, 3, 48, 164))
+    output = model(data)
+    print('output: ', output.size())
+    # print(output)
+
+
+def crnn_test():
+    print('crnn_test')
+    model = CRNN(imgH=32, nc=3, nclass=84, nh=256, ngpu=1)
+    data = Variable(torch.randn(1, 3, 32, 100))
     output = model(data)
     print('output: ', output.size())
     # print(output)
@@ -242,3 +253,5 @@ if __name__ == '__main__':
     # softmax_test()
 
     gru_test()
+
+    crnn_test()
