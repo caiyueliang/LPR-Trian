@@ -94,39 +94,36 @@ class CGRU(nn.Module):
         self.softmax = nn.Softmax(dim=2)
 
     def forward(self, input):
-        print('input: ', input.size())      # (-1, 3, 48, 164)
+        # print('input: ', input.size())      # (-1, 3, 48, 164)
         x = self.conv_1(input)
-        print('conv_1: ', x.size())         # (-1, 32, 23, 81)
+        # print('conv_1: ', x.size())         # (-1, 32, 23, 81)
         x = self.conv_2(x)
-        print('conv_2: ', x.size())         # (-1, 64, 10, 39)
+        # print('conv_2: ', x.size())         # (-1, 64, 10, 39)
         x = self.conv_3(x)
-        print('conv_3: ', x.size())         # (-1, 128, 4, 18)
+        # print('conv_3: ', x.size())         # (-1, 128, 4, 18)
 
         b, c, h, w = x.size()
-        print('b %d, c %d, h %d, w %d' % (b, c, h, w))  # b -1, c 128, h 4, w 18
+        # print('b %d, c %d, h %d, w %d' % (b, c, h, w))  # b -1, c 128, h 4, w 18
         x = x.reshape([-1, w, c * h])
-        print('reshape: ', x.size())        # (-1, 18, 512)
+        # print('reshape: ', x.size())        # (-1, 18, 512)
         x = self.fc(x)
-        print('fc: ', x.size())             # (-1, 18, 32)
+        # print('fc: ', x.size())             # (-1, 18, 32)
         x = self.bn(x)
-        print('bn: ', x.size())             # (-1, 18, 32)
+        # print('bn: ', x.size())             # (-1, 18, 32)
         x = self.relu(x)
 
-        x = x.permute(1, 0, 2)              # [w, b, c]
-        print('permute: ', x.size())        # (18, -1, 32)
+        x = x.permute(1, 0, 2)                # [w, b, c]
+        # print('permute: ', x.size())        # (18, -1, 32)
 
         x, _ = self.gru_1(x)
-        print('gru_1: ', x.size())          # (18, -1, 512)
+        # print('gru_1: ', x.size())          # (18, -1, 512)
         x, _ = self.gru_2(x)
-        print('gru_2: ', x.size())          # (18, -1, 512)
+        # print('gru_2: ', x.size())          # (18, -1, 512)
 
         x = self.fc_end(x)
-        print('fc_end: ', x.size())         # (18, -1, 84)
-
-        # x = x.permute(1, 0, 2)            # [b, w, c]
-        # print('permute: ', x.size())      # (-1, 18, 84)
+        # print('fc_end: ', x.size())         # (18, -1, 84)
         x = self.softmax(x)
-        print('softmax: ', x.size())        # (-1, 18, 84) # (18, -1, 84)
+        # print('softmax: ', x.size())        # (-1, 18, 84) # (18, -1, 84)
 
         output = x
         return output
