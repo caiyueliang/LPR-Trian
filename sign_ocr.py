@@ -221,13 +221,14 @@ class SignOcr:
 if __name__ == '__main__':
     # image_dir = "../Data/car_recognition/train/province_2"
     # image_dir = "../Data/car_recognition/train/province_3"
-    image_dir = "../Data/car_recognition/train/province_4"
+    # image_dir = "../Data/car_recognition/train/province_4"
     # image_dir = "../Data/car_recognition/train/failed_5"
+    image_dir = "../Data/car_recognition/train/failed_7"
 
     sign_ocr = SignOcr(image_dir)
     sign_ocr.use_platform()
 
-    # sign_ocr.sign_start()
-    sign_ocr.check_start("../Data/car_recognition/train", "labels_normal.txt")
+    sign_ocr.sign_start()
+    # sign_ocr.check_start("../Data/car_recognition/train", "labels_normal.txt")
     # sign_ocr.review_start()
 
