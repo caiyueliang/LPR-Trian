@@ -10,8 +10,9 @@ import torchvision.transforms as transforms
 import lmdb
 import six
 import sys
-from PIL import Image
+from PIL import Image, ImageFilter
 import numpy as np
+import cv2
 
 # # 图片加载类
 # class MyDataset(data.Dataset):
@@ -123,10 +124,11 @@ import numpy as np
 
 
 class MyDataset(Dataset):
-    def __init__(self, root=None, label_file=None, transform=None, target_transform=None):
+    def __init__(self, root=None, label_file=None, transform=None, target_transform=None, is_train=False):
         self.root = root
         self.label_file = label_file
         self.sample_list = list()
+        self.is_train = is_train
 
         with open(self.label_file, 'r') as f:
             self.sample_list = f.readlines()
@@ -166,6 +168,10 @@ class MyDataset(Dataset):
 
         img = Image.open(os.path.join(self.root, image_path))
 
+        if self.is_train is True:
+            img = self.random_gaussian(img)
+            img = self.random_crop(img)
+
         if self.transform is not None:
             img = self.transform(img)
 
@@ -198,6 +204,38 @@ class MyDataset(Dataset):
         # print(img.size())
         # print(label)
         return (img, label)
+
+    # 随机高斯模糊
+    def random_gaussian(self, img, max_n=7):
+        k = random.randrange(1, max_n, 2)
+        if k != 1:
+            img = img.filter(ImageFilter.GaussianBlur(radius=k))
+            # img = cv2.GaussianBlur(img, ksize=(k, k), sigmaX=1.5)
+        return img
+
+    # 随机裁剪
+    def random_crop(self, img, max_n=5):
+        # imh, imw, _ = img.shape
+        imw, imh = img.size
+        print('宽：%d, 高：%d' % (imw, imh))
+
+        top = random.randint(0, max_n)
+        bottom = random.randint(0, max_n)
+        left = random.randint(0, max_n)
+        right = random.randint(0, max_n)
+        # print top, bottom, left, right
+
+        # (left, upper, right, lower)
+        box = (left, top, imw-right, imh-bottom)
+        roi = img.crop(box)
+        roi = roi.resize((imw, imh))
+
+        # img = img[top:imh-bottom, left:imw-right, :]
+        print(roi.size)
+        roi = roi.resize((imw, imh))
+        print(roi.size)
+
+        return roi
 
 
 class resizeNormalize(object):
