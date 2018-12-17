@@ -50,11 +50,13 @@ class ModuleTrain:
         ])
 
         train_label = os.path.join(train_path, 'labels_normal.txt')
-        train_dataset = my_dataset.MyDataset(root=train_path, label_file=train_label, transform=self.transform)
+        train_dataset = my_dataset.MyDataset(root=train_path, label_file=train_label, transform=self.transform,
+                                             is_train=True)
         self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=self.batch_size,
                                                         shuffle=True, num_workers=int(self.workers))
         test_label = os.path.join(test_path, 'labels_normal.txt')
-        test_dataset = my_dataset.MyDataset(root=test_path, label_file=test_label, transform=self.transform)
+        test_dataset = my_dataset.MyDataset(root=test_path, label_file=test_label, transform=self.transform,
+                                            is_train=False)
         self.test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=self.batch_size,
                                                        shuffle=False, num_workers=int(self.workers))
 

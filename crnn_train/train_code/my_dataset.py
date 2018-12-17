@@ -206,18 +206,25 @@ class MyDataset(Dataset):
         return (img, label)
 
     # 随机高斯模糊
-    def random_gaussian(self, img, max_n=7):
-        k = random.randrange(1, max_n, 2)
-        if k != 1:
-            img = img.filter(ImageFilter.GaussianBlur(radius=k))
+    def random_gaussian(self, img, max_n=2):
+        # img_1 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+        # cv2.imshow("old", img_1)
+
+        k = random.random()
+        if k > 0.5:
+            img = img.filter(ImageFilter.GaussianBlur(radius=1.5))
             # img = cv2.GaussianBlur(img, ksize=(k, k), sigmaX=1.5)
+
+        # img_2 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+        # cv2.imshow("new", img_2)
+        # cv2.waitKey()
         return img
 
     # 随机裁剪
     def random_crop(self, img, max_n=5):
-        # imh, imw, _ = img.shape
         imw, imh = img.size
-        print('宽：%d, 高：%d' % (imw, imh))
+        # img_1 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+        # cv2.imshow("old", img_1)
 
         top = random.randint(0, max_n)
         bottom = random.randint(0, max_n)
@@ -230,10 +237,12 @@ class MyDataset(Dataset):
         roi = img.crop(box)
         roi = roi.resize((imw, imh))
 
-        # img = img[top:imh-bottom, left:imw-right, :]
-        print(roi.size)
+        # print(roi.size)
         roi = roi.resize((imw, imh))
-        print(roi.size)
+        # print(roi.size)
+        # img_2 = cv2.cvtColor(np.asarray(roi), cv2.COLOR_RGB2BGR)
+        # cv2.imshow("new", img_2)
+        # cv2.waitKey()
 
         return roi
 
