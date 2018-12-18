@@ -1,4 +1,6 @@
 # encoding:utf-8
+from torch.autograd import Variable
+import torch
 import torch.nn as nn
 import utils
 
@@ -86,3 +88,17 @@ class CRNN(nn.Module):
         output = utils.data_parallel(self.rnn, conv, self.ngpu)
 
         return output
+
+
+def crnn_test():
+    print('crnn_test')
+    model = CRNN(imgH=32, nc=3, nclass=85, nh=256, ngpu=1)
+    data = Variable(torch.randn(1, 3, 32, 110))
+    print('input: ', data.size())
+    output = model(data)
+    print('output: ', output.size())
+    # print(output)
+
+
+if __name__ == '__main__':
+    crnn_test()

@@ -4,7 +4,7 @@ import os
 import argparse
 from train_code.keys import alphabet
 import models.crnn as crnn
-import models.gru as cgru
+import models.cgru as cgru
 from train_code import model_train as old_mt
 from train_code import model_train_new as new_mt
 

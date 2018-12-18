@@ -15,7 +15,7 @@ import time
 
 class ModuleTrain:
     def __init__(self, train_path, test_path, model_file, model, img_h=32, img_w=110, batch_size=64, lr=1e-3,
-                 use_unicode=True, best_acc=0.9, use_gpu=True, workers=1):
+                 use_unicode=True, best_loss=0.2, use_gpu=True, workers=1):
         self.model = model
         self.model_file = model_file
         self.use_unicode = use_unicode
@@ -23,7 +23,7 @@ class ModuleTrain:
         self.img_w = img_w
         self.batch_size = batch_size
         self.lr = lr
-        self.best_acc = best_acc
+        self.best_loss = best_loss
         self.use_gpu = use_gpu
         self.workers = workers
 
@@ -146,8 +146,8 @@ class ModuleTrain:
 
             # Test
             test_loss, test_acc = self.test()
-            if test_acc > self.best_acc:
-                self.best_acc = test_acc
+            if test_loss < self.best_loss:
+                self.best_loss = test_loss
                 str_list = self.model_file.split('.')
                 best_model_file = ""
                 for str_index in range(len(str_list)):
