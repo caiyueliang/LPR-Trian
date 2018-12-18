@@ -110,6 +110,7 @@ class ModuleTrain:
                 # 计算损失
                 preds = self.model(image)
                 preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
+                # print('preds_size', preds_size)
                 loss = self.criterion(preds, text, preds_size, length)
                 # self.model.zero_grad()
                 # 反向传播计算梯度
@@ -118,10 +119,23 @@ class ModuleTrain:
                 self.optimizer.step()
                 train_loss += loss.item()
 
+                # print(preds.size())
+                # total = 0.0
+                # print('len', len(preds.data[0][0]))
+                # for i in range(len(preds.data[0][0])):
+                #     total += preds.data[0][0][i]
+                #     print('total', total)
+
                 _, preds = preds.max(2)
+                # print(preds.size())
                 # preds = preds.squeeze(2)
                 preds = preds.transpose(1, 0).contiguous().view(-1)
+                # print(preds.size())
                 sim_preds = self.converter.decode(preds.data, preds_size.data, raw=False)
+                # print(sim_preds)
+                # print(target)
+                # total_preds = self.converter.decode(preds.data, preds_size.data, raw=True)
+                # print(total_preds)
                 for pred, target in zip(sim_preds, target):
                     if pred.strip() == target.strip():
                         correct += 1

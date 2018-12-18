@@ -88,8 +88,8 @@ class CGRU(nn.Module):
         self.relu = nn.ReLU()
 
         self.gru_1 = nn.GRU(input_size=n_base_conv, hidden_size=n_hide_size, bidirectional=True)
-        # self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True, dropout=0.25)
-        self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
+        self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True, dropout=0.25)
+        # self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
 
         self.fc_end = nn.Linear(in_features=n_base_conv * 16, out_features=n_class)
         self.softmax = nn.Softmax(dim=2)
@@ -123,8 +123,8 @@ class CGRU(nn.Module):
 
         x = self.fc_end(x)
         # print('fc_end: ', x.size())         # (18, -1, 84)
-        x = self.softmax(x)
-        # print('softmax: ', x.size())        # (-1, 18, 84) # (18, -1, 84)
+        # x = self.softmax(x)
+        # print('softmax: ', x.size())        # (18, -1, 84)
 
         output = x
         return output
@@ -242,7 +242,7 @@ def gru_test():
 def crnn_test():
     print('crnn_test')
     model = CRNN(imgH=32, nc=3, nclass=85, nh=256, ngpu=1)
-    data = Variable(torch.randn(1, 3, 32, 100))
+    data = Variable(torch.randn(1, 3, 32, 110))
     print('input: ', data.size())
     output = model(data)
     print('output: ', output.size())
