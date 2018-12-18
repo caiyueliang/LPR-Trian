@@ -250,7 +250,7 @@ def crnn_test():
 
 
 if __name__ == '__main__':
-    # softmax_test()
+    softmax_test()
 
     gru_test()
 
