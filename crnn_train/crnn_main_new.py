@@ -56,11 +56,11 @@ if __name__ == '__main__':
     print("[nclass] ", nclass)
     nc = int(opt.n_channels)
 
-    if opt.model == 'GRU':
+    if opt.model == 'CGRU':
         img_w = 164
         img_h = 48
         model = cgru.CGRU(width=img_w, height=img_h, n_class=nclass)
-        out_put_model_file = os.path.join(opt.out_put, 'gru.pth')
+        out_put_model_file = os.path.join(opt.out_put, 'cgru.pth')
     else:
         img_w = 110
         img_h = 32

@@ -3,57 +3,57 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import utils
-from keras.layers import *
-from keras.layers import Input, Activation, Conv2D, BatchNormalization, Lambda, MaxPooling2D, Dropout
+# from keras.layers import *
+# from keras.layers import Input, Activation, Conv2D, BatchNormalization, Lambda, MaxPooling2D, Dropout
 
 
-# 基于GRU车牌识别模型
-def model_seq_rec():
-    width, height, n_len, n_class = 164, 48, 7, 83 + 1
-    rnn_size = 256
-    input_tensor = Input(name='the_input', shape=(164, 48, 3), dtype='float32')
-    x = input_tensor
-    base_conv = 32
-    print('input_tensor', x.shape)
-
-    for i in range(3):
-        x = Conv2D(base_conv * (2 ** i), (3, 3))(x)
-        print('Conv2D', x.shape)
-        x = BatchNormalization()(x)
-        x = Activation('relu')(x)
-        x = MaxPooling2D(pool_size=(2, 2))(x)
-        print('MaxPooling2D', x.shape)          # [None, 18, 4, 128]
-
-    conv_shape = x.get_shape()
-    print(conv_shape)
-    x = Reshape(target_shape=(int(conv_shape[1]), int(conv_shape[2] * conv_shape[3])))(x)
-    print('Reshape', x.shape)                   # [None, 18, 512]
-    x = Dense(32)(x)
-    print('Dense', x.shape)                     # [None, 18, 32]
-    x = BatchNormalization()(x)
-    print('BatchNormalization', x.shape)        # [None, 18, 32]
-    x = Activation('relu')(x)
-    print('Activation', x.shape)                # [None, 18, 32]
-
-    gru_1 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru1')(x)
-    print('gru_1', gru_1.shape)                 # [None, None, 256]
-    gru_1b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru1_b')(x)
-    print('gru_1b', gru_1b.shape)               # [None, None, 256]
-    gru1_merged = add([gru_1, gru_1b])
-    print('gru1_merged', gru1_merged.shape)     # [None, None, 256]
-
-    gru_2 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru2')(gru1_merged)
-    print('gru_2', gru_2.shape)                 # [None, None, 256]
-    gru_2b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru2_b')(gru1_merged)
-    print('gru_2b', gru_2b.shape)               # [None, None, 256]
-    x = concatenate([gru_2, gru_2b])
-    print('concatenate', x.shape)               # [None, None, 512]
-    x = Dropout(0.25)(x)
-    x = Dense(n_class, kernel_initializer='he_normal', activation='softmax')(x)
-    print('Dense', x.shape)                     # [None, 18, 84]
-
-    y_pred = x
-    return input_tensor, y_pred
+# # 基于GRU车牌识别模型
+# def model_seq_rec():
+#     width, height, n_len, n_class = 164, 48, 7, 83 + 1
+#     rnn_size = 256
+#     input_tensor = Input(name='the_input', shape=(164, 48, 3), dtype='float32')
+#     x = input_tensor
+#     base_conv = 32
+#     print('input_tensor', x.shape)
+#
+#     for i in range(3):
+#         x = Conv2D(base_conv * (2 ** i), (3, 3))(x)
+#         print('Conv2D', x.shape)
+#         x = BatchNormalization()(x)
+#         x = Activation('relu')(x)
+#         x = MaxPooling2D(pool_size=(2, 2))(x)
+#         print('MaxPooling2D', x.shape)          # [None, 18, 4, 128]
+#
+#     conv_shape = x.get_shape()
+#     print(conv_shape)
+#     x = Reshape(target_shape=(int(conv_shape[1]), int(conv_shape[2] * conv_shape[3])))(x)
+#     print('Reshape', x.shape)                   # [None, 18, 512]
+#     x = Dense(32)(x)
+#     print('Dense', x.shape)                     # [None, 18, 32]
+#     x = BatchNormalization()(x)
+#     print('BatchNormalization', x.shape)        # [None, 18, 32]
+#     x = Activation('relu')(x)
+#     print('Activation', x.shape)                # [None, 18, 32]
+#
+#     gru_1 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru1')(x)
+#     print('gru_1', gru_1.shape)                 # [None, None, 256]
+#     gru_1b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru1_b')(x)
+#     print('gru_1b', gru_1b.shape)               # [None, None, 256]
+#     gru1_merged = add([gru_1, gru_1b])
+#     print('gru1_merged', gru1_merged.shape)     # [None, None, 256]
+#
+#     gru_2 = GRU(rnn_size, return_sequences=True, kernel_initializer='he_normal', name='gru2')(gru1_merged)
+#     print('gru_2', gru_2.shape)                 # [None, None, 256]
+#     gru_2b = GRU(rnn_size, return_sequences=True, go_backwards=True, kernel_initializer='he_normal', name='gru2_b')(gru1_merged)
+#     print('gru_2b', gru_2b.shape)               # [None, None, 256]
+#     x = concatenate([gru_2, gru_2b])
+#     print('concatenate', x.shape)               # [None, None, 512]
+#     x = Dropout(0.25)(x)
+#     x = Dense(n_class, kernel_initializer='he_normal', activation='softmax')(x)
+#     print('Dense', x.shape)                     # [None, 18, 84]
+#
+#     y_pred = x
+#     return input_tensor, y_pred
 
 
 class MyConv2D(nn.Module):
@@ -88,7 +88,8 @@ class CGRU(nn.Module):
         self.relu = nn.ReLU()
 
         self.gru_1 = nn.GRU(input_size=n_base_conv, hidden_size=n_hide_size, bidirectional=True)
-        self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True, dropout=0.25)
+        # self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True, dropout=0.25)
+        self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
 
         self.fc_end = nn.Linear(in_features=n_base_conv * 16, out_features=n_class)
         self.softmax = nn.Softmax(dim=2)
@@ -201,7 +202,7 @@ class CRNN(nn.Module):
         )
 
     def forward(self, input):
-        print(input.size())
+        # print(input.size())
         # conv features
         conv = utils.data_parallel(self.cnn, input, self.ngpu)
         b, c, h, w = conv.size()
@@ -211,7 +212,7 @@ class CRNN(nn.Module):
 
         # rnn features
         output = utils.data_parallel(self.rnn, conv, self.ngpu)
-        print(output.size())
+        # print(output.size())
         return output
 
 
@@ -230,8 +231,9 @@ def softmax_test():
 
 def gru_test():
     print('gru_test')
-    model = CGRU(width=164, height=48, n_class=84)
+    model = CGRU(width=164, height=48, n_class=85)
     data = Variable(torch.randn(1, 3, 48, 164))
+    print('input: ', data.size())
     output = model(data)
     print('output: ', output.size())
     # print(output)
@@ -239,8 +241,9 @@ def gru_test():
 
 def crnn_test():
     print('crnn_test')
-    model = CRNN(imgH=32, nc=3, nclass=84, nh=256, ngpu=1)
+    model = CRNN(imgH=32, nc=3, nclass=85, nh=256, ngpu=1)
     data = Variable(torch.randn(1, 3, 32, 100))
+    print('input: ', data.size())
     output = model(data)
     print('output: ', output.size())
     # print(output)
