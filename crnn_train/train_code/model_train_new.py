@@ -46,7 +46,7 @@ class ModuleTrain:
         self.transform = T.Compose([
             T.Resize((self.img_h, self.img_w)),
             T.ToTensor(),
-            T.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
+            # T.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
         ])
 
         train_label = os.path.join(train_path, 'labels_normal.txt')
@@ -67,7 +67,7 @@ class ModuleTrain:
         #     self.optimizer = optim.Adadelta(crnn.parameters(), lr=opt.lr)
         # else:
         #     self.optimizer = optim.RMSprop(crnn.parameters(), lr=opt.lr)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=1e-5)
 
     def train(self, epoch, decay_epoch=80):
         image = torch.FloatTensor(self.batch_size, 3, self.img_h, self.img_w)
@@ -82,9 +82,9 @@ class ModuleTrain:
             train_loss = 0.0
             correct = 0
 
-            # if epoch_i >= decay_epoch and epoch_i % decay_epoch == 0:                   # 减小学习速率
-            #     self.lr = self.lr * 0.1
-            #     self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+            if epoch_i >= decay_epoch and epoch_i % decay_epoch == 0:                   # 减小学习速率
+                self.lr = self.lr * 0.1
+                self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=1e-5)
 
             print('================================================')
             for batch_idx, (data, target) in enumerate(self.train_loader):              # 训练
