@@ -87,6 +87,7 @@ class ModuleTrain:
                 self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=1e-5)
 
             print('================================================')
+            self.model.train()
             for batch_idx, (data, target) in enumerate(self.train_loader):              # 训练
                 # data, target = Variable(data), Variable(target)
 
@@ -106,7 +107,7 @@ class ModuleTrain:
                 self.optimizer.zero_grad()
                 for p in self.model.parameters():
                     p.requires_grad = True
-                self.model.train()
+
                 # 计算损失
                 preds = self.model(image)
                 preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
@@ -171,13 +172,12 @@ class ModuleTrain:
         for p in self.model.parameters():
             p.requires_grad = False
 
-        self.model.eval()
-
         test_loss = 0.0
         correct = 0
         # loss_avg = utils.averager()
 
         time_start = time.time()
+        self.model.eval()
         for data, target in self.test_loader:
             cpu_images = data
             cpu_texts = target
