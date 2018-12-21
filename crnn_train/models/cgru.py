@@ -88,10 +88,11 @@ class CGRU(nn.Module):
         self.relu = nn.ReLU()
 
         self.gru_1 = nn.GRU(input_size=n_base_conv, hidden_size=n_hide_size, bidirectional=True)
-        self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True, dropout=0.25)
+        self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
 
         self.fc_end = nn.Linear(in_features=n_base_conv * 16, out_features=n_class)
-        self.softmax = nn.Softmax(dim=2)
+        # self.dropout = nn.Dropout(p=0.25)
+        # self.softmax = nn.Softmax(dim=2)
 
     def forward(self, input):
         # print('input: ', input.size())      # (-1, 3, 48, 164)
