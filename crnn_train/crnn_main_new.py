@@ -71,6 +71,6 @@ if __name__ == '__main__':
                                      model_file=out_put_model_file, model=model,
                                      img_h=img_h, img_w=img_w, batch_size=opt.batch_size, lr=opt.lr)
 
-    model_train.train(200, 80)
+    model_train.train(400, 100)
     model_train.test()
 

@@ -24,6 +24,7 @@ class ModuleTrain:
         self.batch_size = batch_size
         self.lr = lr
         self.best_loss = best_loss
+        self.best_acc = 0.95
         self.use_gpu = use_gpu
         self.workers = workers
 
@@ -84,7 +85,9 @@ class ModuleTrain:
 
             if epoch_i >= decay_epoch and epoch_i % decay_epoch == 0:                   # 减小学习速率
                 self.lr = self.lr * 0.1
-                self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=1e-5)
+                for param_group in self.optimizer.param_groups:
+                    param_group['lr'] = self.lr
+                # self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=1e-5)
 
             print('================================================')
             self.model.train()
@@ -155,6 +158,18 @@ class ModuleTrain:
                     best_model_file = best_model_file + str_list[str_index]
                     if str_index == (len(str_list) - 2):
                         best_model_file += '_best'
+                    if str_index != (len(str_list) - 1):
+                        best_model_file += '.'
+                self.save(best_model_file)  # 保存最好的模型
+
+            if test_acc > self.best_acc:
+                self.best_acc = test_acc
+                str_list = self.model_file.split('.')
+                best_model_file = ""
+                for str_index in range(len(str_list)):
+                    best_model_file = best_model_file + str_list[str_index]
+                    if str_index == (len(str_list) - 2):
+                        best_model_file += '_best_acc'
                     if str_index != (len(str_list) - 1):
                         best_model_file += '.'
                 self.save(best_model_file)  # 保存最好的模型
