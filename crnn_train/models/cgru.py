@@ -91,7 +91,7 @@ class CGRU(nn.Module):
         self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
 
         self.fc_end = nn.Linear(in_features=n_base_conv * 16, out_features=n_class)
-        self.dropout = nn.Dropout(p=0.25)
+        self.dropout = nn.Dropout(p=0.4)
         self.softmax = nn.Softmax(dim=2)
 
     def forward(self, input):
