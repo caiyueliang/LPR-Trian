@@ -5,6 +5,7 @@ import argparse
 from train_code.keys import alphabet
 import models.crnn as crnn
 import models.cgru as cgru
+import models.cgru_new as cgru_new
 from train_code import model_train as old_mt
 from train_code import model_train_new as new_mt
 
@@ -56,11 +57,16 @@ if __name__ == '__main__':
     print("[nclass] ", nclass)
     nc = int(opt.n_channels)
 
+    # if opt.model == 'CGRU':
+    #     img_w = 164
+    #     img_h = 48
+    #     model = cgru.CGRU(width=img_w, height=img_h, n_class=nclass)
+    #     out_put_model_file = os.path.join(opt.out_put, 'cgru.pth')
     if opt.model == 'CGRU':
         img_w = 164
         img_h = 48
-        model = cgru.CGRU(width=img_w, height=img_h, n_class=nclass)
-        out_put_model_file = os.path.join(opt.out_put, 'cgru.pth')
+        model = cgru_new.CGRU(width=img_w, height=img_h, n_class=nclass)
+        out_put_model_file = os.path.join(opt.out_put, 'cgru_new.pth')
     else:
         img_w = 110
         img_h = 32
