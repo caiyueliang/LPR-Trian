@@ -91,8 +91,8 @@ class CGRU(nn.Module):
         self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
 
         self.fc_end = nn.Linear(in_features=n_base_conv * 16, out_features=n_class)
-        # self.dropout = nn.Dropout(p=0.25)
-        # self.softmax = nn.Softmax(dim=2)
+        self.dropout = nn.Dropout(p=0.25)
+        self.softmax = nn.Softmax(dim=2)
 
     def forward(self, input):
         # print('input: ', input.size())      # (-1, 3, 48, 164)
@@ -121,6 +121,7 @@ class CGRU(nn.Module):
         x, _ = self.gru_2(x)
         # print('gru_2: ', x.size())          # (18, -1, 512)
 
+        x = self.dropout(x)
         x = self.fc_end(x)
         # print('fc_end: ', x.size())         # (18, -1, 84)
         # x = self.softmax(x)                 # CRNN没有做归一化，同CRNN
