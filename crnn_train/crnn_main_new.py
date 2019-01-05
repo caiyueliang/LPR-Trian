@@ -66,7 +66,7 @@ if __name__ == '__main__':
         img_w = 164
         img_h = 48
         model = cgru_new.CGRU(width=img_w, height=img_h, n_class=nclass)
-        out_put_model_file = os.path.join(opt.out_put, 'cgru_new.pth')
+        out_put_model_file = os.path.join(opt.out_put, 'cgru.pth')
     else:
         img_w = 110
         img_h = 32
