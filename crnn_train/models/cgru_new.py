@@ -7,37 +7,49 @@ import utils
 
 class BidirectionalLSTM(nn.Module):
 
-    def __init__(self, nIn, nHidden, nOut, ngpu=True):
+    def __init__(self, nIn, nHidden, nOut):
         super(BidirectionalLSTM, self).__init__()
-        self.ngpu = ngpu
 
         self.rnn = nn.LSTM(nIn, nHidden, bidirectional=True)
         self.embedding = nn.Linear(nHidden * 2, nOut)
 
     def forward(self, input):
-        recurrent, _ = utils.data_parallel(self.rnn, input, self.ngpu)  # [T, b, h * 2]
-
+        recurrent, _ = self.rnn(input)                                      # [T, b, h * 2]
+        # print('recurrent: ', recurrent.size())                              # (18, -1, 512)
         T, b, h = recurrent.size()
         t_rec = recurrent.view(T * b, h)
-        output = utils.data_parallel(self.embedding, t_rec, self.ngpu)  # [T * b, nOut]
+        # print('t_rec: ', t_rec.size())                                      # (18, -1, 512)
+        output = self.embedding(t_rec)
+        # print('output: ', output.size())                                    # (18, -1, 512)
         output = output.view(T, b, -1)
 
         return output
 
 
 class MyConv2D(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, use_crelu=True):
         super(MyConv2D, self).__init__()
-        self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3))
-        self.bn = nn.BatchNorm2d(num_features=out_channels)
+        self.use_crelu = use_crelu
+
+        if self.use_crelu is True:
+            self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels / 2, kernel_size=(3, 3), padding=1)
+            self.bn = nn.BatchNorm2d(num_features=out_channels / 2)
+        else:
+            self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3), padding=1)
+            self.bn = nn.BatchNorm2d(num_features=out_channels)
+
         self.relu = nn.ReLU()
         self.max_pool = nn.MaxPool2d(kernel_size=(2, 2))
 
     def forward(self, input):
         x = self.conv(input)
         x = self.bn(x)
-        # x = self.relu(x)                                          # ReLU
-        x = torch.cat((self.relu(x), self.relu(-x)), 1)             # CReLU
+
+        if self.use_crelu is True:
+            x = torch.cat((self.relu(x), self.relu(-x)), 1)             # CReLU
+        else:
+            x = self.relu(x)                                          # ReLU
+
         output = self.max_pool(x)
         return output
 
@@ -50,8 +62,8 @@ class CGRU(nn.Module):
         n_hide_size = 256
 
         self.conv_1 = MyConv2D(in_channels=n_c, out_channels=n_base_conv)
-        self.conv_2 = MyConv2D(in_channels=n_base_conv * 2, out_channels=n_base_conv * 2)
-        self.conv_3 = MyConv2D(in_channels=n_base_conv * 4, out_channels=n_base_conv * 4)
+        self.conv_2 = MyConv2D(in_channels=n_base_conv, out_channels=n_base_conv * 2)
+        self.conv_3 = MyConv2D(in_channels=n_base_conv * 2, out_channels=n_base_conv * 4, use_crelu=False)
 
         # self.fc = nn.Linear(in_features=n_base_conv * 16, out_features=n_base_conv)
         # self.bn = nn.BatchNorm1d(num_features=18)
@@ -63,7 +75,7 @@ class CGRU(nn.Module):
         # self.gru_2 = nn.LSTM(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
 
         self.rnn = nn.Sequential(
-            BidirectionalLSTM(nIn=n_base_conv * 32, nHidden=n_hide_size, nOut=n_hide_size),
+            BidirectionalLSTM(nIn=n_base_conv * 24, nHidden=n_hide_size, nOut=n_hide_size),
             BidirectionalLSTM(nIn=n_hide_size, nHidden=n_hide_size, nOut=n_class)
         )
 
