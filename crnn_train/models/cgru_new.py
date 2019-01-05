@@ -5,6 +5,26 @@ from torch.autograd import Variable
 import utils
 
 
+class BidirectionalLSTM(nn.Module):
+
+    def __init__(self, nIn, nHidden, nOut, ngpu=True):
+        super(BidirectionalLSTM, self).__init__()
+        self.ngpu = ngpu
+
+        self.rnn = nn.LSTM(nIn, nHidden, bidirectional=True)
+        self.embedding = nn.Linear(nHidden * 2, nOut)
+
+    def forward(self, input):
+        recurrent, _ = utils.data_parallel(self.rnn, input, self.ngpu)  # [T, b, h * 2]
+
+        T, b, h = recurrent.size()
+        t_rec = recurrent.view(T * b, h)
+        output = utils.data_parallel(self.embedding, t_rec, self.ngpu)  # [T * b, nOut]
+        output = output.view(T, b, -1)
+
+        return output
+
+
 class MyConv2D(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(MyConv2D, self).__init__()
@@ -39,12 +59,17 @@ class CGRU(nn.Module):
 
         # self.gru_1 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
         # self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
-        self.gru_1 = nn.LSTM(input_size=n_base_conv * 32, hidden_size=n_hide_size, bidirectional=True)
-        self.gru_2 = nn.LSTM(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
+        # self.gru_1 = nn.LSTM(input_size=n_base_conv * 32, hidden_size=n_hide_size, bidirectional=True)
+        # self.gru_2 = nn.LSTM(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
 
-        self.fc_end = nn.Linear(in_features=n_base_conv * 16, out_features=n_class)
-        self.dropout = nn.Dropout(p=0.25)
-        self.softmax = nn.Softmax(dim=2)
+        self.rnn = nn.Sequential(
+            BidirectionalLSTM(nIn=n_base_conv * 32, nHidden=n_hide_size, nOut=n_hide_size),
+            BidirectionalLSTM(nIn=n_hide_size, nHidden=n_hide_size, nOut=n_class)
+        )
+
+        # self.fc_end = nn.Linear(in_features=n_base_conv * 16, out_features=n_class)
+        # self.dropout = nn.Dropout(p=0.25)
+        # self.softmax = nn.Softmax(dim=2)
 
     def forward(self, input):
         # print('input: ', input.size())      # (-1, 3, 48, 164)
@@ -60,23 +85,24 @@ class CGRU(nn.Module):
         x = x.reshape([-1, w, c * h])
         # print('reshape: ', x.size())        # (-1, 18, 512)
         # x = self.fc(x)
-        # # print('fc: ', x.size())             # (-1, 18, 32)
+        # # print('fc: ', x.size())           # (-1, 18, 32)
         # x = self.bn(x)
-        # # print('bn: ', x.size())             # (-1, 18, 32)
+        # # print('bn: ', x.size())           # (-1, 18, 32)
         # x = self.relu(x)
 
         x = x.permute(1, 0, 2)                # [w, b, c]
         # print('permute: ', x.size())        # (18, -1, 32)
 
-        x, _ = self.gru_1(x)
+        # x, _ = self.gru_1(x)
         # print('gru_1: ', x.size())          # (18, -1, 512)
-        x, _ = self.gru_2(x)
+        # x, _ = self.gru_2(x)
         # print('gru_2: ', x.size())          # (18, -1, 512)
 
-        x = self.dropout(x)
-        x = self.fc_end(x)
+        # x = self.dropout(x)
+        # x = self.fc_end(x)
         # print('fc_end: ', x.size())         # (18, -1, 84)
 
+        x = self.rnn(x)
         output = x
         return output
 
