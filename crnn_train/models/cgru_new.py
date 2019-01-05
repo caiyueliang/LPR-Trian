@@ -16,7 +16,8 @@ class MyConv2D(nn.Module):
     def forward(self, input):
         x = self.conv(input)
         x = self.bn(x)
-        x = self.relu(x)
+        # x = self.relu(x)                                          # ReLU
+        x = torch.cat((self.relu(x), self.relu(-x)), 1)             # CReLU
         output = self.max_pool(x)
         return output
 
@@ -29,15 +30,17 @@ class CGRU(nn.Module):
         n_hide_size = 256
 
         self.conv_1 = MyConv2D(in_channels=n_c, out_channels=n_base_conv)
-        self.conv_2 = MyConv2D(in_channels=n_base_conv, out_channels=n_base_conv * 2)
-        self.conv_3 = MyConv2D(in_channels=n_base_conv * 2, out_channels=n_base_conv * 4)
+        self.conv_2 = MyConv2D(in_channels=n_base_conv * 2, out_channels=n_base_conv * 2)
+        self.conv_3 = MyConv2D(in_channels=n_base_conv * 4, out_channels=n_base_conv * 4)
 
         # self.fc = nn.Linear(in_features=n_base_conv * 16, out_features=n_base_conv)
         # self.bn = nn.BatchNorm1d(num_features=18)
         # self.relu = nn.ReLU()
 
-        self.gru_1 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
-        self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
+        # self.gru_1 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
+        # self.gru_2 = nn.GRU(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
+        self.gru_1 = nn.LSTM(input_size=n_base_conv * 32, hidden_size=n_hide_size, bidirectional=True)
+        self.gru_2 = nn.LSTM(input_size=n_base_conv * 16, hidden_size=n_hide_size, bidirectional=True)
 
         self.fc_end = nn.Linear(in_features=n_base_conv * 16, out_features=n_class)
         self.dropout = nn.Dropout(p=0.25)
