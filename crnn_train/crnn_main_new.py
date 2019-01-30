@@ -13,7 +13,8 @@ from train_code import model_train_new as new_mt
 def parse_argvs():
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_root', help='path to dataset', default='../../Data/car_recognition/train')
-    parser.add_argument('--val_root', help='path to dataset', default='../../Data/car_recognition/test')
+    # parser.add_argument('--val_root', help='path to dataset', default='../../Data/car_recognition/test')
+    parser.add_argument('--val_root', help='path to dataset', default='../../Data/car_recognition/train')
     parser.add_argument('--model', help='model to train', default='CRNN')
 
     parser.add_argument('--workers', type=int, help='number of data loading workers', default=1)
@@ -66,7 +67,7 @@ if __name__ == '__main__':
         img_w = 164
         img_h = 48
         model = cgru_new.CGRU(width=img_w, height=img_h, n_class=nclass)
-        out_put_model_file = os.path.join(opt.out_put, 'cgru_new.pth')
+        out_put_model_file = os.path.join(opt.out_put, 'cgru.pth')
     else:
         img_w = 110
         img_h = 32
@@ -77,6 +78,6 @@ if __name__ == '__main__':
                                      model_file=out_put_model_file, model=model,
                                      img_h=img_h, img_w=img_w, batch_size=opt.batch_size, lr=opt.lr)
 
-    model_train.train(400, 100)
+    model_train.train(200, 60)
     model_train.test()
 
