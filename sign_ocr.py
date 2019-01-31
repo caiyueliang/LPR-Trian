@@ -223,7 +223,8 @@ if __name__ == '__main__':
     # image_dir = "../Data/car_recognition/train/province_3"
     # image_dir = "../Data/car_recognition/train/province_4"
     # image_dir = "../Data/car_recognition/train/failed_5"
-    image_dir = "../Data/car_recognition/train/failed_7"
+    # image_dir = "../Data/car_recognition/train/failed_7"
+    image_dir = "../Data/car_recognition/train/failed_8"
 
     sign_ocr = SignOcr(image_dir)
     sign_ocr.use_platform()
