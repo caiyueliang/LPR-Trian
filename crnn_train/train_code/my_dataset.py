@@ -37,73 +37,7 @@ class MyDataset(Dataset):
     def __len__(self):
         return self.nSamples
 
-    # # PIL
-    # def __getitem__(self, index):
-    #     assert index < self.nSamples, 'index range error'
-    #     record = self.sample_list[index].replace('\n', '').replace('\r', '').replace(' ', '')
-    #     str_list = record.split(':')
-    #     label = str_list[-1]
-    #     image_path = str_list[0]
-    #
-    #     img = Image.open(os.path.join(self.root, image_path))
-    #
-    #     if self.is_train is True:
-    #         img = self.random_gaussian(img)
-    #         img = self.random_crop(img)
-    #
-    #     if self.transform is not None:
-    #         img = self.transform(img)
-    #
-    #     if self.target_transform is not None:
-    #         label = self.target_transform(label)
-    #
-    #     # print(img)
-    #     # print(img.size())
-    #     # print(label)
-    #     return (img, label)
-    #
-    # # 随机高斯模糊(PIL)
-    # def random_gaussian(self, img, max_n=2):
-    #     # img_1 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
-    #     # cv2.imshow("old", img_1)
-    #
-    #     k = random.random()
-    #     if k > 0.5:
-    #         img = img.filter(ImageFilter.GaussianBlur(radius=1.5))
-    #         # img = cv2.GaussianBlur(img, ksize=(k, k), sigmaX=1.5)
-    #
-    #     # img_2 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
-    #     # cv2.imshow("new", img_2)
-    #     # cv2.waitKey()
-    #     return img
-    #
-    # # 随机裁剪(PIL)
-    # def random_crop(self, img, max_n=5):
-    #     imw, imh = img.size
-    #     # img_1 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
-    #     # cv2.imshow("old", img_1)
-    #
-    #     top = random.randint(0, max_n)
-    #     bottom = random.randint(0, max_n)
-    #     left = random.randint(0, max_n)
-    #     right = random.randint(0, max_n)
-    #     # print top, bottom, left, right
-    #
-    #     # (left, upper, right, lower)
-    #     box = (left, top, imw-right, imh-bottom)
-    #     roi = img.crop(box)
-    #     roi = roi.resize((imw, imh))
-    #
-    #     # print(roi.size)
-    #     roi = roi.resize((imw, imh))
-    #     # print(roi.size)
-    #     # img_2 = cv2.cvtColor(np.asarray(roi), cv2.COLOR_RGB2BGR)
-    #     # cv2.imshow("new", img_2)
-    #     # cv2.waitKey()
-    #
-    #     return roi
-
-    # opencv
+    # PIL
     def __getitem__(self, index):
         assert index < self.nSamples, 'index range error'
         record = self.sample_list[index].replace('\n', '').replace('\r', '').replace(' ', '')
@@ -111,14 +45,12 @@ class MyDataset(Dataset):
         label = str_list[-1]
         image_path = str_list[0]
 
-        # img = Image.open(os.path.join(self.root, image_path))
-        img = cv2.imread(os.path.join(self.root, image_path))
+        img = Image.open(os.path.join(self.root, image_path))
 
         if self.is_train is True:
             img = self.random_gaussian(img)
             img = self.random_crop(img)
 
-        img = cv2.resize(img, (self.img_w, self.img_h))
         if self.transform is not None:
             img = self.transform(img)
 
@@ -130,23 +62,24 @@ class MyDataset(Dataset):
         # print(label)
         return (img, label)
 
-    # 随机高斯模糊(opencv)
-    def random_gaussian(self, img, max_n=3):
+    # 随机高斯模糊(PIL)
+    def random_gaussian(self, img, max_n=2):
         # img_1 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
         # cv2.imshow("old", img_1)
 
         k = random.random()
         if k > 0.5:
-            img = cv2.GaussianBlur(img, ksize=(max_n, max_n), sigmaX=1.5)
+            img = img.filter(ImageFilter.GaussianBlur(radius=1.5))
+            # img = cv2.GaussianBlur(img, ksize=(k, k), sigmaX=1.5)
 
         # img_2 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
         # cv2.imshow("new", img_2)
         # cv2.waitKey()
         return img
 
-    # 随机裁剪(opencv)
+    # 随机裁剪(PIL)
     def random_crop(self, img, max_n=5):
-        imh, imw, _ = img.shape
+        imw, imh = img.size
         # img_1 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
         # cv2.imshow("old", img_1)
 
@@ -157,19 +90,86 @@ class MyDataset(Dataset):
         # print top, bottom, left, right
 
         # (left, upper, right, lower)
-        corp_img = img[top:imh-bottom, left:imw-right]
-        # box = (left, top, imw-right, imh-bottom)
-        # roi = img.crop(box)
-        roi = cv2.resize(corp_img, (imw, imh))
+        box = (left, top, imw-right, imh-bottom)
+        roi = img.crop(box)
+        roi = roi.resize((imw, imh))
 
         # print(roi.size)
-        # roi = roi.resize((imw, imh))
+        roi = roi.resize((imw, imh))
         # print(roi.size)
         # img_2 = cv2.cvtColor(np.asarray(roi), cv2.COLOR_RGB2BGR)
         # cv2.imshow("new", img_2)
         # cv2.waitKey()
 
         return roi
+
+    # # opencv
+    # def __getitem__(self, index):
+    #     assert index < self.nSamples, 'index range error'
+    #     record = self.sample_list[index].replace('\n', '').replace('\r', '').replace(' ', '')
+    #     str_list = record.split(':')
+    #     label = str_list[-1]
+    #     image_path = str_list[0]
+    #
+    #     # img = Image.open(os.path.join(self.root, image_path))
+    #     img = cv2.imread(os.path.join(self.root, image_path))
+    #
+    #     if self.is_train is True:
+    #         img = self.random_gaussian(img)
+    #         img = self.random_crop(img)
+    #
+    #     img = cv2.resize(img, (self.img_w, self.img_h))
+    #     if self.transform is not None:
+    #         img = self.transform(img)
+    #
+    #     if self.target_transform is not None:
+    #         label = self.target_transform(label)
+    #
+    #     # print(img)
+    #     # print(img.size())
+    #     # print(label)
+    #     return (img, label)
+    #
+    # # 随机高斯模糊(opencv)
+    # def random_gaussian(self, img, max_n=3):
+    #     # img_1 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+    #     # cv2.imshow("old", img_1)
+    #
+    #     k = random.random()
+    #     if k > 0.5:
+    #         img = cv2.GaussianBlur(img, ksize=(max_n, max_n), sigmaX=1.5)
+    #
+    #     # img_2 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+    #     # cv2.imshow("new", img_2)
+    #     # cv2.waitKey()
+    #     return img
+    #
+    # # 随机裁剪(opencv)
+    # def random_crop(self, img, max_n=5):
+    #     imh, imw, _ = img.shape
+    #     # img_1 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+    #     # cv2.imshow("old", img_1)
+    #
+    #     top = random.randint(0, max_n)
+    #     bottom = random.randint(0, max_n)
+    #     left = random.randint(0, max_n)
+    #     right = random.randint(0, max_n)
+    #     # print top, bottom, left, right
+    #
+    #     # (left, upper, right, lower)
+    #     corp_img = img[top:imh-bottom, left:imw-right]
+    #     # box = (left, top, imw-right, imh-bottom)
+    #     # roi = img.crop(box)
+    #     roi = cv2.resize(corp_img, (imw, imh))
+    #
+    #     # print(roi.size)
+    #     # roi = roi.resize((imw, imh))
+    #     # print(roi.size)
+    #     # img_2 = cv2.cvtColor(np.asarray(roi), cv2.COLOR_RGB2BGR)
+    #     # cv2.imshow("new", img_2)
+    #     # cv2.waitKey()
+    #
+    #     return roi
 
 
 class resizeNormalize(object):

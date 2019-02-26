@@ -45,7 +45,7 @@ class ModuleTrain:
             print('[Load model] error !!!')
 
         self.transform = T.Compose([
-            # T.Resize((self.img_h, self.img_w)),
+            T.Resize((self.img_h, self.img_w)),
             T.ToTensor(),
             # T.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
         ])
